@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "entity",
+    "indexer",
+    "migration"
+]
+resolver = "2"
+
+[workspace.dependencies]
+#farcaster-rs = "1"
+tokio = {version = "1", features = ["full"]}
+anyhow = "1"
