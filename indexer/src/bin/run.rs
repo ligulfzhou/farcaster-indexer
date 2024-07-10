@@ -1,6 +1,6 @@
 use tokio::sync::mpsc;
 use indexer::rpc::client::Client;
-use indexer::rpc::farcaster_grpc::{HubEvent, HubEventType, MergeMessageBody};
+use indexer::rpc::farcaster_grpc::{HubEvent, HubEventType};
 use indexer::rpc::farcaster_grpc::hub_event::Body as EventBody;
 use indexer::rpc::farcaster_grpc::message_data::Body as MessageDataBody;
 

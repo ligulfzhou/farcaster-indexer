@@ -1,0 +1,8 @@
+migrate:
+    cd /Users/ligulfzhou/Money/blockchain/farcaster/farcaster-indexer-rs/migration
+    export DATABASE_URL=postgresql://ligulfzhou:POSTGRESzlg153@localhost/farcaster
+    cargo run
+
+
+generate entity:
+    sea-orm-cli generate entity -u postgresql://ligulfzhou:POSTGRESzlg153@localhost/farcaster -o entity/src

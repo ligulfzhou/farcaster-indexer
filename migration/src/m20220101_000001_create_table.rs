@@ -9,32 +9,32 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Casts::Table)
+                    .table(Cast::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Casts::Id)
+                        ColumnDef::new(Cast::Id)
                             .integer()
                             .not_null()
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Casts::Fid).big_integer().not_null())
-                    .col(ColumnDef::new(Casts::ParentId).big_integer())
-                    .col(ColumnDef::new(Casts::Hash).text().not_null().unique_key())
-                    .col(ColumnDef::new(Casts::RootParentHash).text())
-                    .col(ColumnDef::new(Casts::ParentHash).text())
-                    .col(ColumnDef::new(Casts::RootParentUrl).text())
-                    .col(ColumnDef::new(Casts::ParentUrl).text())
-                    .col(ColumnDef::new(Casts::Text).text().not_null())
-                    .col(ColumnDef::new(Casts::Embeds).json().not_null().default("[]"))
-                    .col(ColumnDef::new(Casts::Mentions).json().not_null().default("[]"))
-                    .col(ColumnDef::new(Casts::MentionsPositions).json().not_null().default("[]"))
+                    .col(ColumnDef::new(Cast::Fid).big_integer().not_null())
+                    .col(ColumnDef::new(Cast::ParentId).big_integer())
+                    .col(ColumnDef::new(Cast::Hash).text().not_null().unique_key())
+                    .col(ColumnDef::new(Cast::RootParentHash).text())
+                    .col(ColumnDef::new(Cast::ParentHash).text())
+                    .col(ColumnDef::new(Cast::RootParentUrl).text())
+                    .col(ColumnDef::new(Cast::ParentUrl).text())
+                    .col(ColumnDef::new(Cast::Text).text().not_null())
+                    .col(ColumnDef::new(Cast::Embeds).json().not_null().default("[]"))
+                    .col(ColumnDef::new(Cast::Mentions).json().not_null().default("[]"))
+                    .col(ColumnDef::new(Cast::MentionsPositions).json().not_null().default("[]"))
 
-                    .col(ColumnDef::new(Casts::CreateAt).timestamp_with_time_zone().not_null().extra("DEFAULT CURRENT_TIMESTAMP".to_string()))
-                    .col(ColumnDef::new(Casts::UpdatedAt).timestamp_with_time_zone().not_null().extra("DEFAULT CURRENT_TIMESTAMP".to_string()))
-                    .col(ColumnDef::new(Casts::Timestamp).timestamp_with_time_zone().not_null())
-                    .col(ColumnDef::new(Casts::DeletedAt).timestamp_with_time_zone())
-                    .col(ColumnDef::new(Casts::PrunedAt).timestamp_with_time_zone())
+                    .col(ColumnDef::new(Cast::CreateAt).timestamp_with_time_zone().not_null().extra("DEFAULT CURRENT_TIMESTAMP".to_string()))
+                    .col(ColumnDef::new(Cast::UpdatedAt).timestamp_with_time_zone().not_null().extra("DEFAULT CURRENT_TIMESTAMP".to_string()))
+                    .col(ColumnDef::new(Cast::Timestamp).timestamp_with_time_zone().not_null())
+                    .col(ColumnDef::new(Cast::DeletedAt).timestamp_with_time_zone())
+                    .col(ColumnDef::new(Cast::PrunedAt).timestamp_with_time_zone())
                     .to_owned(),
             ).await?;
 
@@ -51,10 +51,10 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Reaction::Fid).big_integer().not_null())
-                    .col(ColumnDef::new(Reaction::TargetCastsFid).big_integer())
+                    .col(ColumnDef::new(Reaction::TargetCastFid).big_integer())
                     .col(ColumnDef::new(Reaction::Type).integer().not_null())
                     .col(ColumnDef::new(Reaction::Hash).text().not_null().unique_key())
-                    .col(ColumnDef::new(Reaction::TargetCastsHash).text())
+                    .col(ColumnDef::new(Reaction::TargetCastHash).text())
                     .col(ColumnDef::new(Reaction::TargetUrl).text())
 
                     .col(ColumnDef::new(Reaction::CreateAt).timestamp_with_time_zone().not_null().extra("DEFAULT CURRENT_TIMESTAMP".to_string()))
@@ -234,7 +234,7 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Casts::Table).to_owned())
+            .drop_table(Table::drop().table(Cast::Table).to_owned())
             .await?;
         manager
             .drop_table(Table::drop().table(Reaction::Table).to_owned())
@@ -265,7 +265,7 @@ impl MigrationTrait for Migration {
 
 
 #[derive(DeriveIden)]
-enum Casts {
+enum Cast {
     Table,
     Id,
     Fid,
@@ -292,10 +292,10 @@ enum Reaction {
     Table,
     Id,
     Fid,
-    TargetCastsFid,
+    TargetCastFid,
     Type,
     Hash,
-    TargetCastsHash,
+    TargetCastHash,
     TargetUrl,
 
     Timestamp,

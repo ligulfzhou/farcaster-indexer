@@ -1,2 +1,2 @@
-export DATABASE_URL=postgresql://ligulfzhou:password@localhost/farcaster
+export DATABASE_URL=postgresql://ligulfzhou:POSTGRESzlg153@localhost/farcaster
 cargo run
