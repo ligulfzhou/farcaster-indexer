@@ -3,7 +3,7 @@ members = [
     "entity",
     "indexer",
     "migration"
-]
+, "service"]
 resolver = "2"
 
 [workspace.dependencies]
