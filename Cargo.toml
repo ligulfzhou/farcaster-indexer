@@ -2,10 +2,11 @@
 members = [
     "entity",
     "indexer",
-    "migration"
-, "service"]
+    "migration",
+    "service"
+]
 resolver = "2"
 
 [workspace.dependencies]
-tokio = {version = "1", features = ["full"]}
+tokio = { version = "1", features = ["full"] }
 anyhow = "1"

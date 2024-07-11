@@ -343,6 +343,13 @@ impl MigrationTrait for Migration {
                     .table(Fids::Table)
                     .if_not_exists()
                     .col(
+                        ColumnDef::new(Fids::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(
                         ColumnDef::new(Fids::RegisterAt)
                             .timestamp_with_time_zone()
                             .not_null()
@@ -655,7 +662,7 @@ enum UserData {
 #[derive(DeriveIden)]
 enum Fids {
     Table,
-    // Id, // why not
+    Id, // why not
     Fid,
     RegisterAt,
     CustodyAddress,
