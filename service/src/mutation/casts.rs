@@ -1,6 +1,13 @@
 use crate::mutation::Mutation;
-use sea_orm::DbConn;
+use entity::prelude;
+use entity::prelude::Casts;
+use sea_orm::sea_query::any;
+use sea_orm::{DbConn, EntityTrait};
 
 impl Mutation {
-    pub fn delete_cast(db: &DbConn) {}
+    pub async fn delete_cast(db: &DbConn, id: i32) -> anyhow::Result<()> {
+        let cast = Casts::find_by_id(id).one(db).await?;
+
+        todo!()
+    }
 }

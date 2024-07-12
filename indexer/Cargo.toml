@@ -11,6 +11,8 @@ tonic = "0.12.0"
 tokio = { workspace = true }
 anyhow = { workspace = true }
 clap = { version = "4.5", features = ["derive"] }
+dotenv = "0.15"
+service = { path = "../service" }
 
 [build-dependencies]
 tonic-build = "0.12"

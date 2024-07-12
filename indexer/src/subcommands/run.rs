@@ -4,7 +4,7 @@ use crate::rpc::farcaster_grpc::message_data::Body as MessageDataBody;
 use crate::rpc::farcaster_grpc::{HubEvent, HubEventType};
 use tokio::sync::mpsc;
 
-async fn run() -> anyhow::Result<()> {
+pub async fn run() -> anyhow::Result<()> {
     let url = "http://[::1]:2283";
 
     let mut client = Client::new(url.to_string()).await?;

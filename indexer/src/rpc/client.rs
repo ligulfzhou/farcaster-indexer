@@ -66,7 +66,7 @@ impl Client {
     }
 }
 
-pub async fn get_all_fids(client: &mut Client) -> anyhow::Result<Vec<u64>> {
+pub async fn get_all_fids(client: &mut Client, max_id: i32) -> anyhow::Result<Vec<u64>> {
     let max_fid = client.get_max_fid().await?;
 
     todo!()
