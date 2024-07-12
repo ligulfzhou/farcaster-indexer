@@ -26,7 +26,12 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Casts::RootParentUrl).text())
                     .col(ColumnDef::new(Casts::ParentUrl).text())
                     .col(ColumnDef::new(Casts::Text).text().not_null())
-                    .col(ColumnDef::new(Casts::Embeds).json().not_null().default("[]"))
+                    .col(
+                        ColumnDef::new(Casts::Embeds)
+                            .json()
+                            .not_null()
+                            .default("[]"),
+                    )
                     .col(
                         ColumnDef::new(Casts::Mentions)
                             .json()

@@ -1,8 +1,8 @@
-use tokio::sync::mpsc;
 use indexer::rpc::client::Client;
-use indexer::rpc::farcaster_grpc::{HubEvent, HubEventType};
 use indexer::rpc::farcaster_grpc::hub_event::Body as EventBody;
 use indexer::rpc::farcaster_grpc::message_data::Body as MessageDataBody;
+use indexer::rpc::farcaster_grpc::{HubEvent, HubEventType};
+use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -26,12 +26,8 @@ async fn main() -> anyhow::Result<()> {
                         if let Some(message_data) = message.data {
                             if let Some(message_body) = message_data.body {
                                 match message_body {
-                                    MessageDataBody::CastAddBody(_) => {
-                                        
-                                    },
-                                    MessageDataBody::CastRemoveBody(_)=> {
-                                        
-                                    }
+                                    MessageDataBody::CastAddBody(_) => {}
+                                    MessageDataBody::CastRemoveBody(_) => {}
                                     _ => todo!(),
                                 }
                             }
@@ -39,30 +35,13 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
             }
-            HubEventType::PruneMessage => {
-                
-            }
+            HubEventType::PruneMessage => {}
             HubEventType::RevokeMessage => {}
             HubEventType::MergeOnChainEvent => {}
             _ => {
                 dbg!("UNHANDLED HUB EVENT, ", event.id);
             }
         }
-
-        // if let Some(body) = event.body {
-        //     match body {
-        //         Body::MergeMessageBody(msg) => {
-        //             let real_msg = msg.message.unwrap();
-        //             if let Some(msg_data) = real_msg.data {
-        //                 msg_data.r#type
-        //             }
-        //         }
-        //         Body::PruneMessageBody(msg) => {}
-        //         Body::RevokeMessageBody(msg) => {}
-        //         Body::MergeUsernameProofBody(msg) => {}
-        //         Body::MergeOnChainEventBody(msg) => {}
-        //     }
-        // }
     }
 
     Ok(())
