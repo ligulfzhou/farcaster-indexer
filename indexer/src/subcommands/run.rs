@@ -1,11 +1,10 @@
-use indexer::rpc::client::Client;
-use indexer::rpc::farcaster_grpc::hub_event::Body as EventBody;
-use indexer::rpc::farcaster_grpc::message_data::Body as MessageDataBody;
-use indexer::rpc::farcaster_grpc::{HubEvent, HubEventType};
+use crate::rpc::client::Client;
+use crate::rpc::farcaster_grpc::hub_event::Body as EventBody;
+use crate::rpc::farcaster_grpc::message_data::Body as MessageDataBody;
+use crate::rpc::farcaster_grpc::{HubEvent, HubEventType};
 use tokio::sync::mpsc;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn run() -> anyhow::Result<()> {
     let url = "http://[::1]:2283";
 
     let mut client = Client::new(url.to_string()).await?;
