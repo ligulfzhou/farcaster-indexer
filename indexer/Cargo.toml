@@ -4,17 +4,20 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lapin = "2.3.4"
 prost = "0.13"
 prost-types = "0.13"
 tonic = "0.12.0"
+lapin = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 clap = { version = "4.5", features = ["derive"] }
 dotenv = "0.15"
-rabbitmq-stream-client = "0.4"
+tokio-executor-trait = "2.1"
+tokio-reactor-trait = "1.1"
+
 service = { path = "../service" }
 farcaster-client = { path = "../farcaster-client" }
+bytes = "1.6.0"
 
 [build-dependencies]
 tonic-build = "0.12"

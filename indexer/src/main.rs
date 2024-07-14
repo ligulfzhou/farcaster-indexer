@@ -2,6 +2,12 @@ mod rabbitmq;
 mod subcommands;
 
 use clap::{Parser, Subcommand};
+use lapin::{
+    message::DeliveryResult,
+    options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, QueueDeclareOptions},
+    types::FieldTable,
+    BasicProperties, Channel, Connection, ConnectionProperties, Queue,
+};
 use service::sea_orm::Database;
 
 #[derive(Parser, Debug)]
@@ -15,7 +21,7 @@ struct Args {
 #[derive(Subcommand, Debug, Clone)]
 enum Commands {
     Backfill { max_fid: Option<i32> },
-    Run,
+    Index,
 }
 
 #[tokio::main]
@@ -33,8 +39,8 @@ async fn main() -> anyhow::Result<()> {
                 .await
                 .expect("run backfill");
         }
-        Commands::Run => {
-            subcommands::run::run(&db).await.expect("run indexer");
+        Commands::Index => {
+            subcommands::index::run(&db).await.expect("run indexer");
         }
     };
 

@@ -1,6 +1,9 @@
 use crate::grpc::{
     hub_service_client::HubServiceClient, FidsRequest, HubEvent, HubEventType, SubscribeRequest,
 };
+use lapin::options::BasicPublishOptions;
+use lapin::{BasicProperties, Channel, Queue};
+use prost::Message;
 use tokio::sync::mpsc::Sender;
 use tonic::codegen::tokio_stream::StreamExt;
 
@@ -17,7 +20,51 @@ impl Client {
 }
 
 impl Client {
-    pub async fn subscribe(
+    pub async fn subscribe_to_mq(
+        &mut self,
+        start_event_id: u64,
+        queue: Queue,
+        chan: Channel,
+    ) -> anyhow::Result<()> {
+        let response = self
+            .client
+            .subscribe(SubscribeRequest {
+                event_types: vec![
+                    HubEventType::MergeMessage as i32,
+                    HubEventType::PruneMessage as i32,
+                    HubEventType::RevokeMessage as i32,
+                    HubEventType::MergeOnChainEvent as i32,
+                ],
+                from_id: Some(start_event_id),
+                total_shards: None,
+                shard_index: None,
+            })
+            .await?;
+
+        let mut stream = response.into_inner();
+
+        while let Some(received) = stream.next().await {
+            println!("\treceived message: `{:?}`", received);
+
+            let event = received.unwrap();
+
+            let encoded = event.encode_to_vec();
+
+            chan.basic_publish(
+                "",
+                queue.name().as_str(),
+                BasicPublishOptions::default(),
+                &encoded,
+                BasicProperties::default(),
+            )
+            .await
+            .expect("public data..");
+        }
+
+        Ok(())
+    }
+
+    pub async fn subscribe_to_mpsc(
         &mut self,
         start_event_id: u64,
         tx: Sender<HubEvent>,
@@ -43,7 +90,6 @@ impl Client {
             println!("\treceived message: `{:?}`", received);
 
             let event = received.unwrap();
-            println!("event: {:?}", event.body);
             tx.send(event).await?;
         }
 

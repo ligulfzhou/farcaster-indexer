@@ -1,3 +1,5 @@
+use crate::rabbitmq::get_mq_queue_channel;
+use bytes::{Buf, Bytes};
 use farcaster_client::client::Client;
 use farcaster_client::grpc::hub_event::Body as EventBody;
 use farcaster_client::grpc::message_data::Body as MessageDataBody;
@@ -5,7 +7,7 @@ use farcaster_client::grpc::{HubEvent, HubEventType};
 use prost::Message;
 use service::sea_orm::DbConn;
 use service::{mutation::Mutation, query::Query};
-
+use std::io::Read;
 use tokio::sync::mpsc;
 
 pub async fn run(db: &DbConn) -> anyhow::Result<()> {
@@ -15,17 +17,27 @@ pub async fn run(db: &DbConn) -> anyhow::Result<()> {
 
     let (tx, mut rx) = mpsc::channel::<HubEvent>(2048);
 
+    let (queue, chan) = get_mq_queue_channel().await;
     tokio::spawn(async move {
+        // client
+        //     .subscribe(0, tx)
+        //     .await
+        //     .expect("subscribe to farcaster node should work");
         client
-            .subscribe(0, tx)
+            .subscribe_to_mq(0, queue, chan)
             .await
-            .expect("subscribe to farcaster node should work");
+            .expect("subscribe to farcaster node with MQ");
     });
 
     while let Some(event) = rx.recv().await {
         let encoded = event.encode_to_vec();
-        let event = HubEvent::decode(encoded);
-        process_event(event, db).await;
+        let cl = encoded.clone();
+
+        let buf = Bytes::from(cl);
+        let rs = HubEvent::decode(buf).unwrap();
+
+        println!("before: {:?}, after: {:?}", event, rs);
+        process_event(rs, db).await;
     }
 
     Ok(())
@@ -43,9 +55,9 @@ async fn process_event(event: HubEvent, db: &DbConn) {
                         if let Some(message_body) = message_data.body {
                             match message_body {
                                 MessageDataBody::CastAddBody(cab) => {
-                                    Mutation::insert_cast(db)
-                                        .await
-                                        .expect("insert cast should work.");
+                                    // Mutation::insert_cast(db)
+                                    //     .await
+                                    //     .expect("insert cast should work.");
                                 }
                                 MessageDataBody::CastRemoveBody(crb) => {
                                     println!("crb: {:?}", crb);

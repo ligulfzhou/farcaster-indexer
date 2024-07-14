@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lapin = "2.3.4"
 prost = "0.13"
 prost-types = "0.13"
 tonic = "0.12.0"
 tokio = { workspace = true }
 anyhow = { workspace = true }
+lapin = { workspace = true }
 entity = { path = "../entity" }
 
 [build-dependencies]
