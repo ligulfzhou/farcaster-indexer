@@ -25,7 +25,7 @@ enum Commands {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
     let arg = Args::parse();
 
     let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL not found.");
@@ -43,13 +43,4 @@ async fn main() -> anyhow::Result<()> {
             subcommands::index::run(&db).await.expect("run indexer");
         }
     };
-
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn test() {}
 }

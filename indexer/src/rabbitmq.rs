@@ -2,7 +2,7 @@ use lapin::options::{BasicConsumeOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
 use lapin::{Channel, Connection, ConnectionProperties, Consumer, Queue};
 
-pub async fn get_mq_queue_channel() -> (Queue, Channel) {
+pub async fn get_mq_queue_channel() -> (Connection, Queue, Channel) {
     let addr = dotenv::var("AMQP_ADDR").expect("AMQP_ADDR not found");
     let options = ConnectionProperties::default()
         .with_executor(tokio_executor_trait::Tokio::current())
@@ -23,18 +23,21 @@ pub async fn get_mq_queue_channel() -> (Queue, Channel) {
         .await
         .expect("declare queue..");
 
-    (queue, chan)
+    (conn, queue, chan)
 }
 
-pub async fn get_consumer() -> Consumer {
-    let (queue, chan) = get_mq_queue_channel().await;
+pub async fn get_consumer() -> (Connection, Consumer) {
+    let (conn, queue, chan) = get_mq_queue_channel().await;
 
-    chan.basic_consume(
-        queue.name().as_str(),
-        "consumer",
-        BasicConsumeOptions::default(),
-        FieldTable::default(),
-    )
-    .await
-    .expect("get consumer")
+    let consumer = chan
+        .basic_consume(
+            queue.name().as_str(),
+            "consumer",
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .expect("get consumer");
+
+    (conn, consumer)
 }
