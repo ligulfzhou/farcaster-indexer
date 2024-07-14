@@ -1,3 +1,4 @@
+mod model_to_entity;
 mod rpc;
 mod subcommands;
 
@@ -34,11 +35,10 @@ async fn main() -> anyhow::Result<()> {
     match arg.cmd {
         Commands::Backfill { max_fid } => {
             // dbg!(max_fid);
-            let _ = subcommands::backfill::run(max_fid.unwrap_or(0)).await?;
+            let _ = subcommands::backfill::run(&db, max_fid.unwrap_or(0)).await?;
         }
         Commands::Run => {
-            dbg!("...run...");
-            let _ = subcommands::run::run().await?;
+            let _ = subcommands::run::run(&db).await?;
         }
     };
 

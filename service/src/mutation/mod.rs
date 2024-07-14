@@ -1,3 +1,3 @@
-mod casts;
+pub mod casts;
 
 pub struct Mutation;

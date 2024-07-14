@@ -1,4 +1,4 @@
-use crate::rpc::farcaster_grpc::{
+use crate::grpc::{
     hub_service_client::HubServiceClient, FidsRequest, HubEvent, HubEventType, SubscribeRequest,
 };
 use tokio::sync::mpsc::Sender;
@@ -70,4 +70,16 @@ pub async fn get_all_fids(client: &mut Client, max_id: i32) -> anyhow::Result<Ve
     let max_fid = client.get_max_fid().await?;
 
     todo!()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::client::Client;
+
+    #[tokio::test]
+    async fn test() -> anyhow::Result<()> {
+        let client = Client::new("".to_string()).await?;
+
+        todo!()
+    }
 }

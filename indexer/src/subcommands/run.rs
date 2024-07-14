@@ -1,10 +1,11 @@
-use crate::rpc::client::Client;
-use crate::rpc::farcaster_grpc::hub_event::Body as EventBody;
-use crate::rpc::farcaster_grpc::message_data::Body as MessageDataBody;
-use crate::rpc::farcaster_grpc::{HubEvent, HubEventType};
+use farcaster_client::client::Client;
+use farcaster_client::grpc::hub_event::Body as EventBody;
+use farcaster_client::grpc::message_data::Body as MessageDataBody;
+use farcaster_client::grpc::{HubEvent, HubEventType};
+use service::sea_orm::DbConn;
 use tokio::sync::mpsc;
 
-pub async fn run() -> anyhow::Result<()> {
+pub async fn run(db: &DbConn) -> anyhow::Result<()> {
     let url = "http://[::1]:2283";
 
     let mut client = Client::new(url.to_string()).await?;

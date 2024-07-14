@@ -1,5 +1,5 @@
 [package]
-name = "indexer"
+name = "farcaster-client"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,10 +10,7 @@ prost-types = "0.13"
 tonic = "0.12.0"
 tokio = { workspace = true }
 anyhow = { workspace = true }
-clap = { version = "4.5", features = ["derive"] }
-dotenv = "0.15"
-service = { path = "../service" }
-farcaster-client = { path = "../farcaster-client" }
+entity = { path = "../entity" }
 
 [build-dependencies]
 tonic-build = "0.12"
