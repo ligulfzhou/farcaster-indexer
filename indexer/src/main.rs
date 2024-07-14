@@ -1,13 +1,8 @@
-mod model_to_entity;
-mod rpc;
+mod rabbitmq;
 mod subcommands;
 
 use clap::{Parser, Subcommand};
-use dotenv::dotenv;
-use service::{
-    mutation, query,
-    sea_orm::{Database, DbConn},
-};
+use service::sea_orm::Database;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -34,11 +29,12 @@ async fn main() -> anyhow::Result<()> {
 
     match arg.cmd {
         Commands::Backfill { max_fid } => {
-            // dbg!(max_fid);
-            let _ = subcommands::backfill::run(&db, max_fid.unwrap_or(0)).await?;
+            subcommands::backfill::run(&db, max_fid.unwrap_or(0))
+                .await
+                .expect("run backfill");
         }
         Commands::Run => {
-            let _ = subcommands::run::run(&db).await?;
+            subcommands::run::run(&db).await.expect("run indexer");
         }
     };
 
