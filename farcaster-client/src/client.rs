@@ -20,6 +20,7 @@ impl Client {
 }
 
 impl Client {
+    // subscribe farcaster hub, and send event to MQ after receiving
     pub async fn subscribe_to_mq(
         &mut self,
         start_event_id: u64,
@@ -43,10 +44,8 @@ impl Client {
 
         let mut stream = response.into_inner();
 
-        while let Some(received) = stream.next().await {
-            println!("\treceived message: `{:?}`", received);
-
-            let event = received.unwrap();
+        while let Some(Ok(event)) = stream.next().await {
+            println!("\treceived message: `{:?}`", event);
 
             let encoded = event.encode_to_vec();
 
@@ -86,10 +85,9 @@ impl Client {
 
         let mut stream = response.into_inner();
 
-        while let Some(received) = stream.next().await {
-            println!("\treceived message: `{:?}`", received);
+        while let Some(Ok(event)) = stream.next().await {
+            println!("\treceived message: `{:?}`", event);
 
-            let event = received.unwrap();
             tx.send(event).await?;
         }
 
