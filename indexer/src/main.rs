@@ -22,6 +22,7 @@ struct Args {
 enum Commands {
     Backfill { max_fid: Option<i32> },
     Index,
+    ClearMQ,
 }
 
 #[tokio::main]
@@ -42,5 +43,6 @@ async fn main() {
         Commands::Index => {
             subcommands::index::run(&db).await.expect("run indexer");
         }
+        Commands::ClearMQ => subcommands::clear_mq::run().await,
     };
 }
