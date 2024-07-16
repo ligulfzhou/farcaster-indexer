@@ -1,31 +1,20 @@
 use crate::rabbitmq::{get_consumer, get_mq_queue_channel};
-use bytes::{Buf, Bytes};
+use bytes::Bytes;
 use farcaster_client::client::Client;
 use farcaster_client::grpc::hub_event::Body as EventBody;
 use farcaster_client::grpc::message_data::Body as MessageDataBody;
 use farcaster_client::grpc::{HubEvent, HubEventType};
 use lapin::message::DeliveryResult;
-use lapin::{Connection, ConsumerDelegate};
+use lapin::ConsumerDelegate;
 use prost::Message;
 use service::sea_orm::DbConn;
-use service::{mutation::Mutation, query::Query};
 use std::future::Future;
-use std::io::Read;
 use std::pin::Pin;
-use tokio::sync::mpsc;
 
 pub async fn run(db: &DbConn) -> anyhow::Result<()> {
     let url = "http://[::1]:2283";
 
     let mut client = Client::new(url.to_string()).await?;
-
-    // let (tx, mut rx) = mpsc::channel::<HubEvent>(2048);
-    // tokio::spawn(async move {
-    //     client
-    //         .subscribe_to_mpsc(0, tx)
-    //         .await
-    //         .expect("subscribe to farcaster node should work");
-    // });
 
     let (_, queue, chan) = get_mq_queue_channel().await;
     tokio::spawn(async move {
@@ -38,19 +27,7 @@ pub async fn run(db: &DbConn) -> anyhow::Result<()> {
     let (conn, consumer) = get_consumer().await;
     let delegate = Delegate { db: db.clone() };
     consumer.set_delegate(delegate);
-    conn.run();
-
-    // while let Some(event) = rx.recv().await {
-    //     let encoded = event.encode_to_vec();
-    //     let cl = encoded.clone();
-    //
-    //     let buf = Bytes::from(cl);
-    //     let rs = HubEvent::decode(buf).unwrap();
-    //
-    //     println!("before: {:?}, after: {:?}", event, rs);
-    //     process_event(rs, db).await;
-    // }
-
+    conn.run().expect("consume message forever");
     Ok(())
 }
 

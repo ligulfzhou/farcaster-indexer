@@ -7,69 +7,43 @@ use prost::Message;
 use tokio::sync::mpsc::Sender;
 use tonic::codegen::tokio_stream::StreamExt;
 
-pub struct Client {
-    addr: String,
-    pub client: HubServiceClient<tonic::transport::Channel>,
-}
+pub struct Client(pub HubServiceClient<tonic::transport::Channel>);
 
 impl Client {
     pub async fn new(addr: String) -> anyhow::Result<Self> {
-        let mut client = HubServiceClient::connect(addr.clone()).await?;
-        Ok(Self { addr, client })
+        let client = HubServiceClient::connect(addr.clone()).await?;
+        Ok(Self(client))
     }
 }
 
 impl Client {
-    // subscribe farcaster hub, and send event to MQ after receiving
     pub async fn subscribe_to_mq(
         &mut self,
         start_event_id: u64,
         queue: Queue,
         chan: Channel,
     ) -> anyhow::Result<()> {
-        let response = self
-            .client
-            .subscribe(SubscribeRequest {
-                event_types: vec![
-                    HubEventType::MergeMessage as i32,
-                    HubEventType::PruneMessage as i32,
-                    HubEventType::RevokeMessage as i32,
-                    HubEventType::MergeOnChainEvent as i32,
-                ],
-                from_id: Some(start_event_id),
-                total_shards: None,
-                shard_index: None,
-            })
-            .await?;
-
-        let mut stream = response.into_inner();
-
-        while let Some(Ok(event)) = stream.next().await {
-            println!("\treceived message: `{:?}`", event);
-
-            let encoded = event.encode_to_vec();
-
-            chan.basic_publish(
-                "",
-                queue.name().as_str(),
-                BasicPublishOptions::default(),
-                &encoded,
-                BasicProperties::default(),
-            )
+        self.subscribe(start_event_id, Some(queue), Some(chan), None)
             .await
-            .expect("public data..");
-        }
-
-        Ok(())
     }
 
-    pub async fn subscribe_to_mpsc(
+    pub async fn subscribe_to_channel(
         &mut self,
         start_event_id: u64,
         tx: Sender<HubEvent>,
     ) -> anyhow::Result<()> {
+        self.subscribe(start_event_id, None, None, Some(tx)).await
+    }
+
+    async fn subscribe(
+        &mut self,
+        start_event_id: u64,
+        queue: Option<Queue>,         // subscribe to mq
+        chan: Option<Channel>,        // subscribe to mq
+        tx: Option<Sender<HubEvent>>, // subscribe to channel
+    ) -> anyhow::Result<()> {
         let response = self
-            .client
+            .0
             .subscribe(SubscribeRequest {
                 event_types: vec![
                     HubEventType::MergeMessage as i32,
@@ -85,10 +59,28 @@ impl Client {
 
         let mut stream = response.into_inner();
 
-        while let Some(Ok(event)) = stream.next().await {
-            println!("\treceived message: `{:?}`", event);
+        // subscribe to mq
+        if let (Some(queue), Some(chan)) = (queue, chan) {
+            while let Some(Ok(event)) = stream.next().await {
+                let encoded = event.encode_to_vec();
+                chan.basic_publish(
+                    "",
+                    queue.name().as_str(),
+                    BasicPublishOptions::default(),
+                    &encoded,
+                    BasicProperties::default(),
+                )
+                .await
+                .expect("publish data to mq");
+            }
+        }
 
-            tx.send(event).await?;
+        if let Some(tx) = tx {
+            while let Some(Ok(event)) = stream.next().await {
+                println!("\treceived message: `{:?}`", event);
+
+                tx.send(event).await.expect("send data to channel");
+            }
         }
 
         Ok(())
@@ -98,7 +90,7 @@ impl Client {
 impl Client {
     pub async fn get_max_fid(&mut self) -> anyhow::Result<u64> {
         let max_fid_res = self
-            .client
+            .0
             .get_fids(FidsRequest {
                 page_size: Some(1),
                 page_token: None,
