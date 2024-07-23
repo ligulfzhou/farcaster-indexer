@@ -9,3 +9,5 @@ pub mod signers;
 pub mod storage;
 pub mod user_data;
 pub mod verifications;
+
+pub use sea_orm;

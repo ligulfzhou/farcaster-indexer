@@ -1,3 +1,4 @@
+use crate::m20220101_000001_create_table::Fids::Fid;
 use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
@@ -19,7 +20,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Casts::Fid).big_integer().not_null())
-                    .col(ColumnDef::new(Casts::ParentId).big_integer())
+                    .col(ColumnDef::new(Casts::ParentFid).big_integer())
                     .col(ColumnDef::new(Casts::Hash).text().not_null().unique_key())
                     .col(ColumnDef::new(Casts::RootParentHash).text())
                     .col(ColumnDef::new(Casts::ParentHash).text())
@@ -354,6 +355,7 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Fids::Fid).big_integer().not_null())
                     .col(
                         ColumnDef::new(Fids::RegisterAt)
                             .timestamp_with_time_zone()
@@ -578,7 +580,7 @@ enum Casts {
     Table,
     Id,
     Fid,
-    ParentId,
+    ParentFid,
     Hash,
     RootParentHash,
     ParentHash,

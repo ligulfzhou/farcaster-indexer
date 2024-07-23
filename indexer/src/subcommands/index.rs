@@ -1,24 +1,21 @@
 use crate::rabbitmq::{get_consumer, get_mq_queue_channel};
 use bytes::Bytes;
-use farcaster_client::client::Client;
-use farcaster_client::grpc::hub_event::Body as EventBody;
-use farcaster_client::grpc::message_data::Body as MessageDataBody;
-use farcaster_client::grpc::{HubEvent, HubEventType};
-use lapin::message::DeliveryResult;
-use lapin::ConsumerDelegate;
+use farcaster_client::{
+    client::Client,
+    grpc::{
+        hub_event::Body as EventBody, message_data::Body as MessageDataBody, HubEvent, HubEventType,
+    },
+};
+use lapin::{message::DeliveryResult, options::BasicAckOptions, ConsumerDelegate};
 use prost::Message;
 use service::sea_orm::DbConn;
 use std::future::Future;
 use std::pin::Pin;
 
-pub async fn run(db: &DbConn) -> anyhow::Result<()> {
-    let url = "http://[::1]:2283";
-
-    let mut client = Client::new(url.to_string()).await?;
-
+pub async fn run(db: &DbConn, mut hub_client: Client) -> anyhow::Result<()> {
     let (_, queue, chan) = get_mq_queue_channel().await;
     tokio::spawn(async move {
-        client
+        hub_client
             .subscribe_to_mq(0, queue, chan)
             .await
             .expect("subscribe to farcaster node with MQ");
@@ -81,12 +78,19 @@ impl ConsumerDelegate for Delegate {
     ) -> Pin<Box<dyn Future<Output = ()> + Send>> {
         Box::pin(async move {
             if let Ok(Some(deliveried)) = delivery {
+                let deliveried_clone = deliveried.clone();
+
                 let data = deliveried.data;
                 let buf = Bytes::from(data);
                 let rs = HubEvent::decode(buf).expect("decode data");
 
                 println!("rs: {:?}", rs);
                 Self::process_event(rs).await;
+
+                deliveried_clone
+                    .ack(BasicAckOptions::default())
+                    .await
+                    .expect("basic ack");
             }
         })
     }

@@ -1,8 +1,9 @@
 use crate::grpc::{
-    hub_service_client::HubServiceClient, FidsRequest, HubEvent, HubEventType, SubscribeRequest,
+    hub_service_client::HubServiceClient, FidRequest, FidsRequest, HubEvent, HubEventType,
+    LinksByFidRequest, MessageData, ReactionsByFidRequest, SubscribeRequest,
 };
-use lapin::options::BasicPublishOptions;
-use lapin::{BasicProperties, Channel, Queue};
+use crate::MAX_PAGE_SIZE;
+use lapin::{options::BasicPublishOptions, BasicProperties, Channel, Queue};
 use prost::Message;
 use tokio::sync::mpsc::Sender;
 use tonic::codegen::tokio_stream::StreamExt;
@@ -100,12 +101,113 @@ impl Client {
 
         Ok(max_fid_res.into_inner().fids[0])
     }
+
+    pub async fn get_all_fids(&mut self, max_id: i32) -> anyhow::Result<Vec<u64>> {
+        let max_fid = self.get_max_fid().await?;
+        dbg!(max_id);
+
+        Ok((1..=max_fid).into_iter().collect())
+    }
 }
 
-pub async fn get_all_fids(client: &mut Client, max_id: i32) -> anyhow::Result<Vec<u64>> {
-    let max_fid = client.get_max_fid().await?;
+impl Client {
+    pub async fn get_all_casts_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<MessageData>> {
+        let mut page_token = None;
+        let mut all_messages: Vec<MessageData> = vec![];
+        loop {
+            let res = self
+                .0
+                .get_casts_by_fid(FidRequest {
+                    fid,
+                    page_size: Some(MAX_PAGE_SIZE),
+                    page_token,
+                    reverse: None,
+                })
+                .await?;
 
-    todo!()
+            let message_response = res.into_inner();
+            page_token = message_response.next_page_token;
+
+            let messages = message_response
+                .messages
+                .into_iter()
+                .filter_map(|m| m.data)
+                .collect::<Vec<MessageData>>();
+
+            all_messages.extend(messages.clone());
+            if messages.len() < MAX_PAGE_SIZE as usize {
+                break;
+            }
+        }
+
+        Ok(all_messages)
+    }
+
+    pub async fn get_all_reactions_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<MessageData>> {
+        let mut page_token = None;
+        let mut all_messages: Vec<MessageData> = vec![];
+        loop {
+            let res = self
+                .0
+                .get_reactions_by_fid(ReactionsByFidRequest {
+                    fid,
+                    reaction_type: None,
+                    page_size: Some(MAX_PAGE_SIZE),
+                    page_token,
+                    reverse: None,
+                })
+                .await?;
+
+            let message_response = res.into_inner();
+            page_token = message_response.next_page_token;
+
+            let messages = message_response
+                .messages
+                .into_iter()
+                .filter_map(|m| m.data)
+                .collect::<Vec<MessageData>>();
+
+            all_messages.extend(messages.clone());
+            if messages.len() < MAX_PAGE_SIZE as usize {
+                break;
+            }
+        }
+
+        Ok(all_messages)
+    }
+
+    pub async fn get_all_links_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<MessageData>> {
+        let mut page_token = None;
+        let mut all_messages: Vec<MessageData> = vec![];
+        loop {
+            let res = self
+                .0
+                .get_links_by_fid(LinksByFidRequest {
+                    fid,
+                    link_type: None,
+                    page_size: Some(MAX_PAGE_SIZE),
+                    page_token,
+                    reverse: None,
+                })
+                .await?;
+
+            let message_response = res.into_inner();
+            page_token = message_response.next_page_token;
+
+            let messages = message_response
+                .messages
+                .into_iter()
+                .filter_map(|m| m.data)
+                .collect::<Vec<MessageData>>();
+
+            all_messages.extend(messages.clone());
+            if messages.len() < MAX_PAGE_SIZE as usize {
+                break;
+            }
+        }
+
+        Ok(all_messages)
+    }
 }
 
 #[cfg(test)]
