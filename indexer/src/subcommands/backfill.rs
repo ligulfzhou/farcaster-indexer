@@ -1,5 +1,5 @@
 use farcaster_client::client::Client;
-use farcaster_client::to_entity::cast_message_to_entity;
+use farcaster_client::to_entity::{cast_message_to_entity, reaction_message_to_entity};
 use service::sea_orm::DbConn;
 
 pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::Result<()> {
@@ -9,19 +9,26 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
     };
 
     for fid in 1..=max_fid_to_iterate {
-        let casts = hub_client.get_all_casts_by_fid(fid).await?;
-        println!("{:?}", casts);
-
-        let entities = casts
+        let casts_entities = hub_client
+            .get_all_casts_by_fid(fid)
+            .await?
             .into_iter()
-            .filter_map(|cast| cast_message_to_entity(cast))
-            .collect::<Vec<entity::casts::ActiveModel>>();
+            .map(|msg| cast_message_to_entity(msg))
+            .collect::<Vec<_>>();
 
-        println!("{:?}", entities);
+        dbg!(&casts_entities);
 
-        service::mutation::Mutation::insert_casts(db, entities).await?;
+        let reactions_entities = hub_client
+            .get_all_reactions_by_fid(fid)
+            .await?
+            .into_iter()
+            .map(|msg| reaction_message_to_entity(msg))
+            .collect::<Vec<_>>();
+
+        for entity in casts_entities {
+            service::mutation::Mutation::insert_cast(db, entity).await?;
+        }
     }
 
-    // todo!()
     Ok(())
 }

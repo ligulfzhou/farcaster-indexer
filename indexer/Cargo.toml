@@ -21,6 +21,8 @@ service = { path = "../service" }
 farcaster-client = { path = "../farcaster-client" }
 entity = { path = "../entity" }
 
+chrono = "0.4"
+
 bytes = "1.6.0"
 
 serde = { workspace = true }

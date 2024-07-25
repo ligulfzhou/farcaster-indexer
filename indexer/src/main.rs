@@ -1,8 +1,11 @@
 mod rabbitmq;
 mod subcommands;
 
+use chrono::{TimeZone, Utc};
 use clap::{Parser, Subcommand};
+use entity::sea_orm::ActiveValue::Set;
 use farcaster_client::client::Client;
+use serde_json::{json, Value};
 use service::sea_orm::Database;
 
 #[derive(Parser, Debug)]
@@ -30,7 +33,7 @@ async fn main() {
         .expect("database connection failed.");
 
     let hub_url = dotenv::var("HUB_GRPC").expect("HUB_GRPC not found.");
-    let mut hub_client = Client::new(hub_url).await.expect("HUB_GRPC not valid");
+    let hub_client = Client::new(hub_url).await.expect("HUB_GRPC not valid");
 
     match arg.cmd {
         Commands::Backfill { max_fid } => {

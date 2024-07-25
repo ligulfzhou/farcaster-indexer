@@ -10,3 +10,13 @@ pub fn farcaster_timestamp_to_datetime_with_tz(timestamp: u32) -> DateTimeWithTi
 
     Utc.timestamp_opt(ts as i64, 0).unwrap().into()
 }
+
+pub fn vec_u8_to_hex_string(vec_u8: &[u8]) -> String {
+    let hex = vec_u8
+        .iter()
+        .map(|u| format!("{:x}", u))
+        .collect::<Vec<_>>()
+        .join("");
+
+    format!("0x{hex}")
+}
