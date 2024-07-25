@@ -1,4 +1,5 @@
 use farcaster_client::client::Client;
+use farcaster_client::to_entity::cast_message_to_entity;
 use service::sea_orm::DbConn;
 
 pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::Result<()> {
@@ -7,11 +8,20 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
         _ => max_fid as u64,
     };
 
-    (1..=max_fid_to_iterate).for_each(|fid| {
-        hub_client.get_all_casts_by_fid(fid);
-    });
+    for fid in 1..=max_fid_to_iterate {
+        let casts = hub_client.get_all_casts_by_fid(fid).await?;
+        println!("{:?}", casts);
 
-    todo!()
+        let entities = casts
+            .into_iter()
+            .filter_map(|cast| cast_message_to_entity(cast))
+            .collect::<Vec<entity::casts::ActiveModel>>();
+
+        println!("{:?}", entities);
+
+        service::mutation::Mutation::insert_casts(db, entities).await?;
+    }
+
+    // todo!()
+    Ok(())
 }
-
-fn make_latest_fid() {}

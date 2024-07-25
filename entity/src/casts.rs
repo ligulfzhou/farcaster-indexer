@@ -8,7 +8,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub fid: i64,
-    pub parent_id: Option<i64>,
+    pub parent_fid: Option<i64>,
     #[sea_orm(column_type = "Text", unique)]
     pub hash: String,
     #[sea_orm(column_type = "Text", nullable)]

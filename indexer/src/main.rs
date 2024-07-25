@@ -32,19 +32,17 @@ async fn main() {
     let hub_url = dotenv::var("HUB_GRPC").expect("HUB_GRPC not found.");
     let mut hub_client = Client::new(hub_url).await.expect("HUB_GRPC not valid");
 
-    let casts = hub_client.get_all_casts_by_fid(1).await.expect("");
-    dbg!(casts);
-    // match arg.cmd {
-    //     Commands::Backfill { max_fid } => {
-    //         subcommands::backfill::run(&db, hub_client, max_fid.unwrap_or(0))
-    //             .await
-    //             .expect("run backfill");
-    //     }
-    //     Commands::Index => {
-    //         subcommands::index::run(&db, hub_client)
-    //             .await
-    //             .expect("run indexer");
-    //     }
-    //     Commands::ClearMQ => subcommands::clear_mq::run().await,
-    // };
+    match arg.cmd {
+        Commands::Backfill { max_fid } => {
+            subcommands::backfill::run(&db, hub_client, max_fid.unwrap_or(0))
+                .await
+                .expect("run backfill");
+        }
+        Commands::Index => {
+            subcommands::index::run(&db, hub_client)
+                .await
+                .expect("run indexer");
+        }
+        Commands::ClearMQ => subcommands::clear_mq::run().await,
+    };
 }

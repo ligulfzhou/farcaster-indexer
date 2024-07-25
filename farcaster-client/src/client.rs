@@ -1,10 +1,11 @@
 use crate::grpc::{
     hub_service_client::HubServiceClient, FidRequest, FidsRequest, HubEvent, HubEventType,
-    LinksByFidRequest, MessageData, ReactionsByFidRequest, SubscribeRequest,
+    LinksByFidRequest, Message, OnChainEvent, OnChainEventRequest, ReactionsByFidRequest,
+    SubscribeRequest,
 };
 use crate::MAX_PAGE_SIZE;
 use lapin::{options::BasicPublishOptions, BasicProperties, Channel, Queue};
-use prost::Message;
+use prost::Message as ProstMessage;
 use tokio::sync::mpsc::Sender;
 use tonic::codegen::tokio_stream::StreamExt;
 
@@ -111,9 +112,39 @@ impl Client {
 }
 
 impl Client {
-    pub async fn get_all_casts_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<MessageData>> {
+    pub async fn get_user_data_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<Message>> {
+        let res = self
+            .0
+            .get_user_data_by_fid(FidRequest {
+                fid,
+                page_size: Some(MAX_PAGE_SIZE),
+                page_token: None,
+                reverse: None,
+            })
+            .await?;
+
+        let message_response = res.into_inner();
+        Ok(message_response.messages)
+    }
+
+    pub async fn get_user_verification_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<Message>> {
+        let res = self
+            .0
+            .get_verifications_by_fid(FidRequest {
+                fid,
+                page_size: Some(MAX_PAGE_SIZE),
+                page_token: None,
+                reverse: None,
+            })
+            .await?;
+
+        let message_response = res.into_inner();
+        Ok(message_response.messages)
+    }
+
+    pub async fn get_all_casts_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<Message>> {
         let mut page_token = None;
-        let mut all_messages: Vec<MessageData> = vec![];
+        let mut all_messages: Vec<Message> = vec![];
         loop {
             let res = self
                 .0
@@ -128,14 +159,8 @@ impl Client {
             let message_response = res.into_inner();
             page_token = message_response.next_page_token;
 
-            let messages = message_response
-                .messages
-                .into_iter()
-                .filter_map(|m| m.data)
-                .collect::<Vec<MessageData>>();
-
-            all_messages.extend(messages.clone());
-            if messages.len() < MAX_PAGE_SIZE as usize {
+            all_messages.extend(message_response.messages.clone());
+            if message_response.messages.len() < MAX_PAGE_SIZE as usize {
                 break;
             }
         }
@@ -143,9 +168,9 @@ impl Client {
         Ok(all_messages)
     }
 
-    pub async fn get_all_reactions_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<MessageData>> {
+    pub async fn get_all_reactions_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<Message>> {
         let mut page_token = None;
-        let mut all_messages: Vec<MessageData> = vec![];
+        let mut all_messages: Vec<Message> = vec![];
         loop {
             let res = self
                 .0
@@ -161,14 +186,8 @@ impl Client {
             let message_response = res.into_inner();
             page_token = message_response.next_page_token;
 
-            let messages = message_response
-                .messages
-                .into_iter()
-                .filter_map(|m| m.data)
-                .collect::<Vec<MessageData>>();
-
-            all_messages.extend(messages.clone());
-            if messages.len() < MAX_PAGE_SIZE as usize {
+            all_messages.extend(message_response.messages.clone());
+            if message_response.messages.len() < MAX_PAGE_SIZE as usize {
                 break;
             }
         }
@@ -176,9 +195,9 @@ impl Client {
         Ok(all_messages)
     }
 
-    pub async fn get_all_links_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<MessageData>> {
+    pub async fn get_all_links_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<Message>> {
         let mut page_token = None;
-        let mut all_messages: Vec<MessageData> = vec![];
+        let mut all_messages: Vec<Message> = vec![];
         loop {
             let res = self
                 .0
@@ -194,19 +213,33 @@ impl Client {
             let message_response = res.into_inner();
             page_token = message_response.next_page_token;
 
-            let messages = message_response
-                .messages
-                .into_iter()
-                .filter_map(|m| m.data)
-                .collect::<Vec<MessageData>>();
-
-            all_messages.extend(messages.clone());
-            if messages.len() < MAX_PAGE_SIZE as usize {
+            all_messages.extend(message_response.messages.clone());
+            if message_response.messages.len() < MAX_PAGE_SIZE as usize {
                 break;
             }
         }
 
         Ok(all_messages)
+    }
+
+    pub async fn get_all_registration_by_fid(
+        &mut self,
+        fid: u64,
+    ) -> anyhow::Result<Vec<OnChainEvent>> {
+        let res = self
+            .0
+            .get_on_chain_events(OnChainEventRequest {
+                fid,
+                event_type: 0,
+                page_size: Some(MAX_PAGE_SIZE),
+                page_token: None,
+                reverse: None,
+            })
+            .await?;
+
+        let message_response = res.into_inner();
+
+        Ok(message_response.events)
     }
 }
 

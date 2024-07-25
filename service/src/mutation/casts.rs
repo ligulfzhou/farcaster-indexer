@@ -15,6 +15,15 @@ impl Mutation {
         Ok(())
     }
 
+    pub async fn insert_casts(db: &DbConn, casts: Vec<casts::ActiveModel>) -> anyhow::Result<()> {
+        let _ = casts::Entity::insert_many(casts)
+            .on_conflict(OnConflict::new().do_nothing().to_owned())
+            .exec(db)
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn delete_cast(db: &DbConn, id: i32) -> anyhow::Result<()> {
         let mut cast: casts::ActiveModel = casts::Entity::find_by_id(id)
             .one(db)
