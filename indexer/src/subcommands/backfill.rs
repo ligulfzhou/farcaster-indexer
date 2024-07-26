@@ -1,6 +1,7 @@
 use farcaster_client::client::Client;
 use farcaster_client::to_entity::{
     cast_message_to_entity, link_message_to_entity, reaction_message_to_entity,
+    user_data_messages_to_entity,
 };
 use service::sea_orm::DbConn;
 
@@ -34,6 +35,9 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .map(link_message_to_entity)
             .collect::<Vec<_>>();
         dbg!(&links_entities);
+
+        let user_data = hub_client.get_user_data_by_fid(fid).await?;
+        let user_data_entities = user_data_messages_to_entity(user_data);
 
         for entity in casts_entities {
             service::mutation::Mutation::insert_cast(db, entity).await?;

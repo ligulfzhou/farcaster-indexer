@@ -1,7 +1,7 @@
 use crate::grpc::{
     hub_service_client::HubServiceClient, FidRequest, FidsRequest, HubEvent, HubEventType,
-    LinksByFidRequest, Message, OnChainEvent, OnChainEventRequest, ReactionsByFidRequest,
-    SubscribeRequest,
+    LinksByFidRequest, Message, OnChainEvent, OnChainEventRequest, OnChainEventType,
+    ReactionsByFidRequest, SubscribeRequest,
 };
 use crate::MAX_PAGE_SIZE;
 use lapin::{options::BasicPublishOptions, BasicProperties, Channel, Queue};
@@ -107,7 +107,7 @@ impl Client {
         let max_fid = self.get_max_fid().await?;
         dbg!(max_id);
 
-        Ok((1..=max_fid).into_iter().collect())
+        Ok((1..=max_fid).collect())
     }
 }
 
@@ -255,7 +255,7 @@ impl Client {
                 .0
                 .get_on_chain_events(OnChainEventRequest {
                     fid,
-                    event_type: 0,
+                    event_type: OnChainEventType::EventTypeIdRegister as i32,
                     page_size: Some(MAX_PAGE_SIZE),
                     page_token,
                     reverse: None,
@@ -270,18 +270,65 @@ impl Client {
                 break;
             }
         }
+
+        all_messages.sort_unstable_by_key(|msg| (msg.block_number, msg.log_index));
         Ok(all_messages)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use crate::client::Client;
+    pub async fn get_all_signers_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<OnChainEvent>> {
+        let mut page_token = None;
+        let mut all_messages: Vec<OnChainEvent> = vec![];
 
-    #[tokio::test]
-    async fn test() -> anyhow::Result<()> {
-        let client = Client::new("".to_string()).await?;
+        loop {
+            let res = self
+                .0
+                .get_on_chain_events(OnChainEventRequest {
+                    fid,
+                    event_type: OnChainEventType::EventTypeSigner as i32,
+                    page_size: Some(MAX_PAGE_SIZE),
+                    page_token,
+                    reverse: None,
+                })
+                .await?;
 
-        todo!()
+            let message_response = res.into_inner();
+            page_token = message_response.next_page_token;
+
+            all_messages.extend(message_response.events.clone());
+            if message_response.events.len() < MAX_PAGE_SIZE as usize {
+                break;
+            }
+        }
+        all_messages.sort_unstable_by_key(|msg| (msg.block_number, msg.log_index));
+        Ok(all_messages)
+    }
+
+    pub async fn get_all_storage_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<OnChainEvent>> {
+        let mut page_token = None;
+        let mut all_messages: Vec<OnChainEvent> = vec![];
+
+        loop {
+            let res = self
+                .0
+                .get_on_chain_events(OnChainEventRequest {
+                    fid,
+                    event_type: OnChainEventType::EventTypeStorageRent as i32,
+                    page_size: Some(MAX_PAGE_SIZE),
+                    page_token,
+                    reverse: None,
+                })
+                .await?;
+
+            let message_response = res.into_inner();
+            page_token = message_response.next_page_token;
+
+            all_messages.extend(message_response.events.clone());
+            if message_response.events.len() < MAX_PAGE_SIZE as usize {
+                break;
+            }
+        }
+
+        all_messages.sort_unstable_by_key(|msg| (msg.block_number, msg.log_index));
+        Ok(all_messages)
     }
 }
