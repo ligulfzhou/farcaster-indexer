@@ -1,4 +1,3 @@
-use crate::m20220101_000001_create_table::Fids::Fid;
 use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]

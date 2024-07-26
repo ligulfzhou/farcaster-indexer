@@ -1,7 +1,7 @@
 use crate::grpc::cast_add_body::Parent;
 use crate::grpc::embed::Embed as InnerEmbed;
 use crate::grpc::reaction_body::Target;
-use crate::grpc::Embed;
+use crate::grpc::{link_body, Embed};
 pub use crate::grpc::{message_data::Body, Message, MessageData};
 use crate::utils::{farcaster_timestamp_to_datetime_with_tz, vec_u8_to_hex_string};
 use entity::sea_orm::ActiveValue::Set;
@@ -73,30 +73,51 @@ pub fn cast_message_to_entity(message: Message) -> entity::casts::ActiveModel {
 
 pub fn reaction_message_to_entity(message: Message) -> entity::reactions::ActiveModel {
     let mut active_model = entity::reactions::ActiveModel::default();
-
     active_model.hash = Set(vec_u8_to_hex_string(&message.hash));
+
     if let Some(message_data) = message.data {
         active_model.fid = Set(message_data.fid as i64);
         active_model.timestamp = Set(farcaster_timestamp_to_datetime_with_tz(
             message_data.timestamp,
         ));
-        if let Some(message_body) = message_data.body {
-            if let Body::ReactionBody(body) = message_body {
-                if let Some(target) = body.target {
-                    match target {
-                        Target::TargetCastId(target_cast_id) => {
-                            active_model.target_cast_fid = Set(Some(target_cast_id.fid as i64));
-                            active_model.target_cast_hash = Set(Some(
-                                String::from_utf8(target_cast_id.hash).unwrap_or("".to_string()),
-                            ));
-                        }
-                        Target::TargetUrl(target_url) => {
-                            active_model.target_url = Set(Some(target_url));
-                        }
+        if let Some(Body::ReactionBody(body)) = message_data.body {
+            if let Some(target) = body.target {
+                match target {
+                    Target::TargetCastId(target_cast_id) => {
+                        active_model.target_cast_fid = Set(Some(target_cast_id.fid as i64));
+                        active_model.target_cast_hash = Set(Some(
+                            String::from_utf8(target_cast_id.hash).unwrap_or("".to_string()),
+                        ));
+                    }
+                    Target::TargetUrl(target_url) => {
+                        active_model.target_url = Set(Some(target_url));
                     }
                 }
+            }
 
-                active_model.r#type = Set(body.r#type);
+            active_model.r#type = Set(body.r#type);
+        }
+    }
+
+    active_model
+}
+
+pub fn link_message_to_entity(message: Message) -> entity::links::ActiveModel {
+    let mut active_model = entity::links::ActiveModel::default();
+    active_model.hash = Set(vec_u8_to_hex_string(&message.hash));
+
+    if let Some(message_data) = message.data {
+        active_model.fid = Set(message_data.fid as i64);
+        active_model.timestamp = Set(farcaster_timestamp_to_datetime_with_tz(
+            message_data.timestamp,
+        ));
+        if let Some(Body::LinkBody(body)) = message_data.body {
+            if let Some(link_body::Target::TargetFid(target_fid)) = body.target {
+                active_model.target_fid = Set(target_fid as i64);
+            }
+            if let Some(ts) = body.display_timestamp {
+                active_model.display_timestamp =
+                    Set(Some(farcaster_timestamp_to_datetime_with_tz(ts)));
             }
         }
     }

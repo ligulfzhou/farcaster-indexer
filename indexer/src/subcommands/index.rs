@@ -41,13 +41,12 @@ impl Delegate {
             HubEventType::MergeMessage => {
                 if let EventBody::MergeMessageBody(msg_body) = event_body {
                     if let Some(message) = msg_body.message {
+                        let message_clone = message.clone();
                         if let Some(message_data) = message.data {
                             if let Some(message_body) = message_data.body {
                                 match message_body {
-                                    MessageDataBody::CastAddBody(cab) => {
-                                        // Mutation::insert_cast(db)
-                                        //     .await
-                                        //     .expect("insert cast should work.");
+                                    MessageDataBody::CastAddBody(_body) => {
+                                        // let entity =
                                     }
                                     MessageDataBody::CastRemoveBody(crb) => {
                                         println!("crb: {:?}", crb);

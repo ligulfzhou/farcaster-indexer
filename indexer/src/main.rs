@@ -1,11 +1,8 @@
 mod rabbitmq;
 mod subcommands;
 
-use chrono::{TimeZone, Utc};
 use clap::{Parser, Subcommand};
-use entity::sea_orm::ActiveValue::Set;
 use farcaster_client::client::Client;
-use serde_json::{json, Value};
 use service::sea_orm::Database;
 
 #[derive(Parser, Debug)]
