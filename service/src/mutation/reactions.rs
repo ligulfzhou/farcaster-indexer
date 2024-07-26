@@ -15,17 +15,15 @@ impl Mutation {
         Ok(())
     }
 
-    // insert multiple as once way raise "columns mismatch" error.
     pub async fn insert_reactions(
         db: &DbConn,
         casts: Vec<reactions::ActiveModel>,
     ) -> anyhow::Result<()> {
-        let t = reactions::Entity::insert_many(casts)
+        let _ = reactions::Entity::insert_many(casts)
             .on_conflict(OnConflict::new().do_nothing().to_owned())
             .exec(db)
             .await?;
 
-        println!("insert_casts: {:?}", t);
         Ok(())
     }
 
@@ -33,7 +31,7 @@ impl Mutation {
         let mut cast: reactions::ActiveModel = reactions::Entity::find_by_id(id)
             .one(db)
             .await?
-            .ok_or(DbErr::RecordNotFound(format!("cast#{}", id)))
+            .ok_or(DbErr::RecordNotFound(format!("reaction#{}", id)))
             .map(Into::into)?;
 
         cast.deleted_at = Set(Some(Utc::now().into()));

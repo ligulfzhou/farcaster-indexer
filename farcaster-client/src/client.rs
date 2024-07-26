@@ -113,33 +113,54 @@ impl Client {
 
 impl Client {
     pub async fn get_user_data_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<Message>> {
-        let res = self
-            .0
-            .get_user_data_by_fid(FidRequest {
-                fid,
-                page_size: Some(MAX_PAGE_SIZE),
-                page_token: None,
-                reverse: None,
-            })
-            .await?;
+        let mut page_token = None;
+        let mut all_messages: Vec<Message> = vec![];
 
-        let message_response = res.into_inner();
-        Ok(message_response.messages)
+        loop {
+            let res = self
+                .0
+                .get_user_data_by_fid(FidRequest {
+                    fid,
+                    page_size: Some(MAX_PAGE_SIZE),
+                    page_token,
+                    reverse: None,
+                })
+                .await?;
+
+            let message_response = res.into_inner();
+            page_token = message_response.next_page_token;
+
+            all_messages.extend(message_response.messages.clone());
+            if message_response.messages.len() < MAX_PAGE_SIZE as usize {
+                break;
+            }
+        }
+        Ok(all_messages)
     }
 
     pub async fn get_user_verification_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<Message>> {
-        let res = self
-            .0
-            .get_verifications_by_fid(FidRequest {
-                fid,
-                page_size: Some(MAX_PAGE_SIZE),
-                page_token: None,
-                reverse: None,
-            })
-            .await?;
+        let mut page_token = None;
+        let mut all_messages: Vec<Message> = vec![];
+        loop {
+            let res = self
+                .0
+                .get_verifications_by_fid(FidRequest {
+                    fid,
+                    page_size: Some(MAX_PAGE_SIZE),
+                    page_token,
+                    reverse: None,
+                })
+                .await?;
 
-        let message_response = res.into_inner();
-        Ok(message_response.messages)
+            let message_response = res.into_inner();
+            page_token = message_response.next_page_token;
+
+            all_messages.extend(message_response.messages.clone());
+            if message_response.messages.len() < MAX_PAGE_SIZE as usize {
+                break;
+            }
+        }
+        Ok(all_messages)
     }
 
     pub async fn get_all_casts_by_fid(&mut self, fid: u64) -> anyhow::Result<Vec<Message>> {
@@ -226,20 +247,30 @@ impl Client {
         &mut self,
         fid: u64,
     ) -> anyhow::Result<Vec<OnChainEvent>> {
-        let res = self
-            .0
-            .get_on_chain_events(OnChainEventRequest {
-                fid,
-                event_type: 0,
-                page_size: Some(MAX_PAGE_SIZE),
-                page_token: None,
-                reverse: None,
-            })
-            .await?;
+        let mut page_token = None;
+        let mut all_messages: Vec<OnChainEvent> = vec![];
 
-        let message_response = res.into_inner();
+        loop {
+            let res = self
+                .0
+                .get_on_chain_events(OnChainEventRequest {
+                    fid,
+                    event_type: 0,
+                    page_size: Some(MAX_PAGE_SIZE),
+                    page_token,
+                    reverse: None,
+                })
+                .await?;
 
-        Ok(message_response.events)
+            let message_response = res.into_inner();
+            page_token = message_response.next_page_token;
+
+            all_messages.extend(message_response.events.clone());
+            if message_response.events.len() < MAX_PAGE_SIZE as usize {
+                break;
+            }
+        }
+        Ok(all_messages)
     }
 }
 
