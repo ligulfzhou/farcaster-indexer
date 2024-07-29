@@ -8,3 +8,4 @@ sea-orm = { version = "1.0.0-rc.7", features = ["runtime-tokio-rustls", "sqlx-po
 anyhow = { workspace = true }
 chrono = { workspace = true }
 entity = { path = "../entity" }
+farcarster-client = { path = "../farcaster-client" }

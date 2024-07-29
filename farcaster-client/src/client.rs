@@ -299,6 +299,7 @@ impl Client {
                 break;
             }
         }
+
         all_messages.sort_unstable_by_key(|msg| (msg.block_number, msg.log_index));
         Ok(all_messages)
     }

@@ -1,9 +1,11 @@
 use crate::grpc::cast_add_body::Parent;
 use crate::grpc::embed::Embed as InnerEmbed;
+use crate::grpc::on_chain_event::Body as OnChainEventBody;
 use crate::grpc::reaction_body::Target;
-use crate::grpc::{link_body, Embed};
+use crate::grpc::{link_body, Embed, OnChainEvent};
 pub use crate::grpc::{message_data::Body, Message, MessageData};
 use crate::utils::{farcaster_timestamp_to_datetime_with_tz, vec_u8_to_hex_string};
+use chrono::Utc;
 use entity::sea_orm::ActiveValue::Set;
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -187,6 +189,24 @@ pub fn verification_message_to_entity(message: Message) -> entity::verifications
             active_model.block_hash = Set(vec_u8_to_hex_string(&body.block_hash));
             active_model.signer_address = Set(vec_u8_to_hex_string(&body.address));
         }
+    }
+
+    active_model
+}
+
+pub fn registration_message_to_entity(event: OnChainEvent) -> entity::fids::ActiveModel {
+    let mut active_model = entity::fids::ActiveModel {
+        fid: Set(event.fid as i64),
+        register_at: Set(farcaster_timestamp_to_datetime_with_tz(
+            event.block_timestamp as u32,
+        )),
+        updated_at: Set(Utc::now().into()),
+        ..Default::default()
+    };
+
+    if let Some(OnChainEventBody::IdRegisterEventBody(body)) = event.body {
+        active_model.custody_address = Set(vec_u8_to_hex_string(&body.to));
+        active_model.recovery_address = Set(vec_u8_to_hex_string(&body.recovery_address));
     }
 
     active_model
