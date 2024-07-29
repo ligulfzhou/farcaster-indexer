@@ -7,19 +7,31 @@ use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait};
 
 impl Mutation {
     pub async fn insert_link(db: &DbConn, link: links::ActiveModel) -> anyhow::Result<()> {
-        let _ = links::Entity::insert(link)
+        let res = links::Entity::insert(link)
             .on_conflict(OnConflict::new().do_nothing().to_owned())
             .exec(db)
-            .await?;
+            .await;
+
+        if let Err(err) = res {
+            if err != DbErr::RecordNotInserted {
+                return Err(anyhow::Error::new(err));
+            }
+        }
 
         Ok(())
     }
 
     pub async fn insert_links(db: &DbConn, casts: Vec<links::ActiveModel>) -> anyhow::Result<()> {
-        let _ = links::Entity::insert_many(casts)
+        let res = links::Entity::insert_many(casts)
             .on_conflict(OnConflict::new().do_nothing().to_owned())
             .exec(db)
-            .await?;
+            .await;
+
+        if let Err(err) = res {
+            if err != DbErr::RecordNotInserted {
+                return Err(anyhow::Error::new(err));
+            }
+        }
 
         Ok(())
     }

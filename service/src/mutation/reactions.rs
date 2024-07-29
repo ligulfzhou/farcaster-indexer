@@ -7,10 +7,16 @@ use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait};
 
 impl Mutation {
     pub async fn insert_reaction(db: &DbConn, cast: reactions::ActiveModel) -> anyhow::Result<()> {
-        let _ = reactions::Entity::insert(cast)
+        let res = reactions::Entity::insert(cast)
             .on_conflict(OnConflict::new().do_nothing().to_owned())
             .exec(db)
-            .await?;
+            .await;
+
+        if let Err(err) = res {
+            if err != DbErr::RecordNotInserted {
+                return Err(anyhow::Error::new(err));
+            }
+        }
 
         Ok(())
     }
@@ -19,10 +25,16 @@ impl Mutation {
         db: &DbConn,
         casts: Vec<reactions::ActiveModel>,
     ) -> anyhow::Result<()> {
-        let _ = reactions::Entity::insert_many(casts)
+        let res = reactions::Entity::insert_many(casts)
             .on_conflict(OnConflict::new().do_nothing().to_owned())
             .exec(db)
-            .await?;
+            .await;
+
+        if let Err(err) = res {
+            if err != DbErr::RecordNotInserted {
+                return Err(anyhow::Error::new(err));
+            }
+        }
 
         Ok(())
     }

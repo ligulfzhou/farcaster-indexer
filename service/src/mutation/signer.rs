@@ -1,12 +1,12 @@
 use crate::mutation::Mutation;
 use entity::signers;
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 use std::vec;
 
 impl Mutation {
     pub async fn insert_signer(db: &DbConn, signer: signers::ActiveModel) -> anyhow::Result<()> {
-        let _ = signers::Entity::insert(signer)
+        let res = signers::Entity::insert(signer)
             .on_conflict(
                 OnConflict::columns(vec![signers::Column::Fid, signers::Column::Key])
                     .update_columns(vec![
@@ -20,7 +20,13 @@ impl Mutation {
                     .to_owned(),
             )
             .exec(db)
-            .await?;
+            .await;
+
+        if let Err(err) = res {
+            if err != DbErr::RecordNotInserted {
+                return Err(anyhow::Error::new(err));
+            }
+        }
 
         Ok(())
     }

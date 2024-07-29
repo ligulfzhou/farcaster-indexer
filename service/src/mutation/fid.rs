@@ -1,11 +1,11 @@
 use crate::mutation::Mutation;
 use entity::fids;
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 impl Mutation {
     pub async fn insert_fid(db: &DbConn, fid: fids::ActiveModel) -> anyhow::Result<()> {
-        fids::Entity::insert(fid)
+        let res = fids::Entity::insert(fid)
             .on_conflict(
                 OnConflict::column(fids::Column::Fid)
                     .update_columns(vec![
@@ -17,7 +17,13 @@ impl Mutation {
                     .to_owned(),
             )
             .exec(db)
-            .await?;
+            .await;
+
+        if let Err(err) = res {
+            if err != DbErr::RecordNotInserted {
+                return Err(anyhow::Error::new(err));
+            }
+        }
 
         Ok(())
     }

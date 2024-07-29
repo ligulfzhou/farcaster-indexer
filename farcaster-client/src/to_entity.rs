@@ -120,6 +120,7 @@ pub fn link_message_to_entity(message: Message) -> entity::links::ActiveModel {
             message_data.timestamp,
         ));
         if let Some(Body::LinkBody(body)) = message_data.body {
+            active_model.r#type = Set(body.r#type);
             if let Some(link_body::Target::TargetFid(target_fid)) = body.target {
                 active_model.target_fid = Set(target_fid as i64);
             }

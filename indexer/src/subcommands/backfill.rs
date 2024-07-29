@@ -23,7 +23,6 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .into_iter()
             .map(cast_message_to_entity)
             .collect::<Vec<_>>();
-        dbg!(&casts_entities);
 
         let reactions_entities = hub_client
             .get_all_reactions_by_fid(fid)
@@ -31,7 +30,6 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .into_iter()
             .map(reaction_message_to_entity)
             .collect::<Vec<_>>();
-        dbg!(&reactions_entities);
 
         let links_entities = hub_client
             .get_all_links_by_fid(fid)
@@ -39,7 +37,6 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .into_iter()
             .map(link_message_to_entity)
             .collect::<Vec<_>>();
-        dbg!(&links_entities);
 
         let user_data = hub_client.get_user_data_by_fid(fid).await?;
         let user_data_entities = user_data_messages_to_entity(user_data);
@@ -59,14 +56,28 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .map(storage_message_to_entity)
             .collect::<Vec<_>>();
 
+        dbg!(&casts_entities);
         for entity in casts_entities {
             service::mutation::Mutation::insert_cast(db, entity).await?;
         }
-        service::mutation::Mutation::insert_reactions(db, reactions_entities).await?;
-        service::mutation::Mutation::insert_links(db, links_entities).await?;
-        service::mutation::Mutation::insert_user_data(db, user_data_entities).await?;
-        service::mutation::Mutation::insert_verfications(db, verifications).await?;
+        dbg!(&reactions_entities);
+        if !reactions_entities.is_empty() {
+            service::mutation::Mutation::insert_reactions(db, reactions_entities).await?;
+        }
+        dbg!(&links_entities);
+        if !links_entities.is_empty() {
+            service::mutation::Mutation::insert_links(db, links_entities).await?;
+        }
+        dbg!(&user_data_entities);
+        if !user_data_entities.is_empty() {
+            service::mutation::Mutation::insert_user_data(db, user_data_entities).await?;
+        }
 
+        dbg!(&verifications);
+        if !verifications.is_empty() {
+            service::mutation::Mutation::insert_verfications(db, verifications).await?;
+        }
+        dbg!(&registrations);
         for registration in registrations {
             let entity = registration_message_to_entity(registration.clone());
             if let Some(OnChainEventBody::IdRegisterEventBody(registration_body)) =
@@ -90,6 +101,7 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             }
         }
 
+        dbg!(&signers);
         for signer in signers {
             let entity = signer_message_to_entity(signer.clone());
             if let Some(OnChainEventBody::SignerEventBody(signer_body)) = signer.body {
@@ -106,6 +118,8 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
                 }
             }
         }
+
+        dbg!(&storages);
         for storage in storages {
             service::mutation::Mutation::insert_storage(db, storage).await?;
         }

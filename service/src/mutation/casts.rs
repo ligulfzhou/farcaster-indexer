@@ -3,26 +3,41 @@ use chrono::Utc;
 use entity::casts;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait, InsertResult};
 
 impl Mutation {
     pub async fn insert_cast(db: &DbConn, cast: casts::ActiveModel) -> anyhow::Result<()> {
-        let _ = casts::Entity::insert(cast)
+        let res = casts::Entity::insert(cast)
             .on_conflict(OnConflict::new().do_nothing().to_owned())
             .exec(db)
-            .await?;
+            .await;
+
+        if let Err(err) = res {
+            if err != DbErr::RecordNotInserted {
+                return Err(anyhow::Error::new(err));
+            }
+        }
 
         Ok(())
     }
 
     // insert multiple as once way raise "columns mismatch" error.
     pub async fn insert_casts(db: &DbConn, casts: Vec<casts::ActiveModel>) -> anyhow::Result<()> {
-        let t = casts::Entity::insert_many(casts)
-            .on_conflict(OnConflict::new().do_nothing().to_owned())
+        let res = casts::Entity::insert_many(casts)
+            .on_conflict(
+                OnConflict::column(casts::Column::Hash)
+                    .do_nothing()
+                    .to_owned(),
+            )
             .exec(db)
-            .await?;
+            .await;
 
-        println!("insert_casts: {:?}", t);
+        if let Err(err) = res {
+            if err != DbErr::RecordNotInserted {
+                return Err(anyhow::Error::new(err));
+            }
+        }
+
         Ok(())
     }
 

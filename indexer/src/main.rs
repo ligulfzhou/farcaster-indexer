@@ -1,4 +1,5 @@
 mod rabbitmq;
+mod redis;
 mod subcommands;
 
 use clap::{Parser, Subcommand};
