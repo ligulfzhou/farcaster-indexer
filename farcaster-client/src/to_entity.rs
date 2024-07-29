@@ -2,14 +2,17 @@ use crate::grpc::cast_add_body::Parent;
 use crate::grpc::embed::Embed as InnerEmbed;
 use crate::grpc::on_chain_event::Body as OnChainEventBody;
 use crate::grpc::reaction_body::Target;
-use crate::grpc::{link_body, Embed, OnChainEvent};
+use crate::grpc::{link_body, Embed, OnChainEvent, SignerEventType};
 pub use crate::grpc::{message_data::Body, Message, MessageData};
 use crate::utils::{farcaster_timestamp_to_datetime_with_tz, vec_u8_to_hex_string};
 use chrono::Utc;
 use entity::sea_orm::ActiveValue::Set;
+// use ethabi_contract::use_contract;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::string::String;
+
+// use_contract!(Farcaster, "res/abi.json");
 
 fn format_embeds(embeds: Vec<Embed>) -> Value {
     let value_array = embeds
@@ -207,6 +210,57 @@ pub fn registration_message_to_entity(event: OnChainEvent) -> entity::fids::Acti
     if let Some(OnChainEventBody::IdRegisterEventBody(body)) = event.body {
         active_model.custody_address = Set(vec_u8_to_hex_string(&body.to));
         active_model.recovery_address = Set(vec_u8_to_hex_string(&body.recovery_address));
+    }
+
+    active_model
+}
+
+// todo: parse abi parameters from metadata
+pub fn signer_message_to_entity(event: OnChainEvent) -> entity::signers::ActiveModel {
+    let mut active_model = entity::signers::ActiveModel {
+        fid: Set(event.fid as i64),
+        updated_at: Set(Utc::now().into()),
+        ..Default::default()
+    };
+    let timestamp = farcaster_timestamp_to_datetime_with_tz(event.block_timestamp as u32);
+
+    if let Some(OnChainEventBody::SignerEventBody(body)) = event.body {
+        if let Ok(event_type) = SignerEventType::try_from(body.event_type) {
+            match event_type {
+                SignerEventType::None => {}
+                SignerEventType::Add => {
+                    active_model.key = Set(vec_u8_to_hex_string(&body.key));
+                    active_model.key_type = Set(body.key_type as i32);
+                    active_model.metadata_type = Set(body.metadata_type as i32);
+                    active_model.added_at = Set(timestamp.clone());
+                    active_model.updated_at = Set(timestamp);
+                }
+                SignerEventType::Remove => {
+                    active_model.key = Set(vec_u8_to_hex_string(&body.key));
+                    active_model.removed_at = Set(Some(timestamp.clone()));
+                    active_model.updated_at = Set(timestamp);
+                }
+                SignerEventType::AdminReset => {}
+            }
+        }
+    }
+
+    active_model
+}
+
+pub fn storage_message_to_entity(event: OnChainEvent) -> entity::storage::ActiveModel {
+    let mut active_model = entity::storage::ActiveModel {
+        fid: Set(event.fid as i64),
+        updated_at: Set(Utc::now().into()),
+        ..Default::default()
+    };
+    let timestamp = farcaster_timestamp_to_datetime_with_tz(event.block_timestamp as u32);
+    active_model.rented_at = Set(timestamp);
+
+    if let Some(OnChainEventBody::StorageRentEventBody(body)) = event.body {
+        active_model.units = Set(body.units as i32);
+        active_model.payer = Set(vec_u8_to_hex_string(&body.payer));
+        active_model.expires_at = Set(farcaster_timestamp_to_datetime_with_tz(body.expiry));
     }
 
     active_model

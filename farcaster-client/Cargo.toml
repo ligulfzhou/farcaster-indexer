@@ -16,5 +16,9 @@ chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
+ethabi = "18.0.0"
+ethabi-contract = "16.0.0"
+ethabi-derive = "16.0.0"
+
 [build-dependencies]
 tonic-build = "0.12"

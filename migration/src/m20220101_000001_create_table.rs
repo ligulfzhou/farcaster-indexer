@@ -397,7 +397,7 @@ impl MigrationTrait for Migration {
                             .big_integer()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Signers::KeyType).big_integer().not_null())
+                    .col(ColumnDef::new(Signers::KeyType).integer().not_null())
                     .col(ColumnDef::new(Signers::MetadataType).integer().not_null())
                     .col(ColumnDef::new(Signers::Key).text().not_null())
                     .col(ColumnDef::new(Signers::Metadata).json().not_null())

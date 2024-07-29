@@ -1,6 +1,8 @@
+use farcaster_client::grpc::SignerEventType;
 use farcaster_client::to_entity::{
     cast_message_to_entity, link_message_to_entity, reaction_message_to_entity,
-    registration_message_to_entity, user_data_messages_to_entity, verification_message_to_entity,
+    registration_message_to_entity, signer_message_to_entity, storage_message_to_entity,
+    user_data_messages_to_entity, verification_message_to_entity,
 };
 use farcaster_client::{
     client::Client,
@@ -50,7 +52,12 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .collect::<Vec<_>>();
         let registrations = hub_client.get_all_registration_by_fid(fid).await?;
         let signers = hub_client.get_all_signers_by_fid(fid).await?;
-        let storage = hub_client.get_all_storage_by_fid(fid).await?;
+        let storages = hub_client
+            .get_all_storage_by_fid(fid)
+            .await?
+            .into_iter()
+            .map(storage_message_to_entity)
+            .collect::<Vec<_>>();
 
         for entity in casts_entities {
             service::mutation::Mutation::insert_cast(db, entity).await?;
@@ -62,9 +69,10 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
 
         for registration in registrations {
             let entity = registration_message_to_entity(registration.clone());
-            if let OnChainEventBody::IdRegisterEventBody(registration_body) = registration.body {
-                if let Some(event_type) =
-                    IdRegisterEventType::from_i32(registration_body.event_type)
+            if let Some(OnChainEventBody::IdRegisterEventBody(registration_body)) =
+                registration.body
+            {
+                if let Ok(event_type) = IdRegisterEventType::try_from(registration_body.event_type)
                 {
                     match event_type {
                         IdRegisterEventType::None => {}
@@ -80,6 +88,26 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
                     }
                 }
             }
+        }
+
+        for signer in signers {
+            let entity = signer_message_to_entity(signer.clone());
+            if let Some(OnChainEventBody::SignerEventBody(signer_body)) = signer.body {
+                if let Ok(event_type) = SignerEventType::try_from(signer_body.event_type) {
+                    match event_type {
+                        SignerEventType::Add => {
+                            service::mutation::Mutation::insert_signer(db, entity).await?;
+                        }
+                        SignerEventType::Remove => {
+                            service::mutation::Mutation::remove_signer(db, entity).await?;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        for storage in storages {
+            service::mutation::Mutation::insert_storage(db, storage).await?;
         }
     }
 

@@ -9,7 +9,7 @@ pub struct Model {
     pub id: i32,
     pub fid: i64,
     pub requester_fid: i64,
-    pub key_type: i64,
+    pub key_type: i32,
     pub metadata_type: i32,
     #[sea_orm(column_type = "Text")]
     pub key: String,

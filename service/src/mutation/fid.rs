@@ -5,7 +5,7 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter};
 
 impl Mutation {
     pub async fn insert_fid(db: &DbConn, fid: fids::ActiveModel) -> anyhow::Result<()> {
-        let t = fids::Entity::insert(fid)
+        fids::Entity::insert(fid)
             .on_conflict(
                 OnConflict::column(fids::Column::Fid)
                     .update_columns(vec![
@@ -24,7 +24,7 @@ impl Mutation {
 
     pub async fn change_recovery(db: &DbConn, fid: fids::ActiveModel) -> anyhow::Result<()> {
         let mut f: fids::ActiveModel = fids::Entity::find()
-            .filter(fids::Column::Fid.eq(fid.fid.into()))
+            .filter(fids::Column::Fid.eq(fid.fid.into_value().unwrap()))
             .one(db)
             .await?
             .unwrap()
@@ -41,7 +41,7 @@ impl Mutation {
 
     pub async fn transfer(db: &DbConn, fid: fids::ActiveModel) -> anyhow::Result<()> {
         let mut f: fids::ActiveModel = fids::Entity::find()
-            .filter(fids::Column::Fid.eq(fid.fid.into()))
+            .filter(fids::Column::Fid.eq(fid.fid.into_value().unwrap()))
             .one(db)
             .await?
             .unwrap()
