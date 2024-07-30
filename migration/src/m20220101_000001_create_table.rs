@@ -477,12 +477,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Storage::Fid).big_integer().not_null())
                     .col(ColumnDef::new(Storage::Units).integer().not_null())
-                    .col(
-                        ColumnDef::new(Storage::Payer)
-                            .text()
-                            .not_null()
-                            .unique_key(),
-                    )
+                    .col(ColumnDef::new(Storage::Payer).text().not_null())
                     .col(
                         ColumnDef::new(Storage::CreateAt)
                             .timestamp_with_time_zone()
