@@ -517,6 +517,7 @@ impl MigrationTrait for Migration {
                     .table(Storage::Table)
                     .col(Storage::Fid)
                     .col(Storage::ExpiresAt)
+                    .unique()
                     .to_owned(),
             )
             .await?;

@@ -7,12 +7,10 @@ pub use crate::grpc::{message_data::Body, Message, MessageData};
 use crate::utils::{farcaster_timestamp_to_datetime_with_tz, vec_u8_to_hex_string};
 use chrono::Utc;
 use entity::sea_orm::ActiveValue::Set;
-// use ethabi_contract::use_contract;
+use ethereum_abi::{Param as EthParam, Type, Value as EthValue};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::string::String;
-
-// use_contract!(Farcaster, "res/abi.json");
 
 fn format_embeds(embeds: Vec<Embed>) -> Value {
     let value_array = embeds
@@ -216,6 +214,51 @@ pub fn registration_message_to_entity(event: OnChainEvent) -> entity::fids::Acti
     active_model
 }
 
+fn decode_abi_parameters(metadata: &[u8]) -> (i64, String, String, i64) {
+    let param: EthParam = EthParam {
+        name: "SignedKeyRequest".to_string(),
+        type_: Type::Tuple(vec![
+            ("requestFid".to_string(), Type::Uint(256)),
+            ("requestSigner".to_string(), Type::Address),
+            ("signature".to_string(), Type::Bytes),
+            ("deadline".to_string(), Type::Uint(256)),
+        ]),
+        indexed: None,
+    };
+    dbg!(&param);
+
+    let decoded =
+        EthValue::decode_from_slice(metadata, &[param.type_]).expect("TODO: panic message");
+    dbg!(&decoded);
+
+    let metadata = decoded[0].clone();
+
+    let mut t_rfid = 0i64;
+    let mut t_rsigner = "".to_string();
+    let mut t_signature = "".to_string();
+    let mut t_deadline = 0i64;
+
+    if let EthValue::Tuple(tt) = metadata {
+        if let EthValue::Uint(rfid, 256) = tt[0].clone().1 {
+            t_rfid = rfid.as_u64() as i64;
+        }
+
+        if let EthValue::Address(addr) = tt[1].clone().1 {
+            t_rsigner = addr.to_string();
+        }
+
+        if let EthValue::Bytes(signature) = tt[2].clone().1 {
+            t_signature = vec_u8_to_hex_string(&signature);
+        }
+
+        if let EthValue::Uint(deadline, 256) = tt[3].clone().1 {
+            t_deadline = deadline.as_u64() as i64;
+        }
+    };
+
+    (t_rfid, t_rsigner, t_signature, t_deadline)
+}
+
 // todo: parse abi parameters from metadata
 pub fn signer_message_to_entity(event: OnChainEvent) -> entity::signers::ActiveModel {
     let mut active_model = entity::signers::ActiveModel {
@@ -230,6 +273,20 @@ pub fn signer_message_to_entity(event: OnChainEvent) -> entity::signers::ActiveM
             match event_type {
                 SignerEventType::None => {}
                 SignerEventType::Add => {
+                    let encoded_input = vec_u8_to_hex_string(&body.metadata);
+                    dbg!(&encoded_input);
+
+                    // process abi parameters
+                    let (request_fid, request_signer, signature, deadline) =
+                        decode_abi_parameters(&body.metadata);
+
+                    active_model.metadata = Set(json!({
+                        "request_fid": request_fid,
+                        "request_signer": request_signer,
+                        "signature": signature,
+                        "deadline": deadline
+                    }));
+                    active_model.requester_fid = Set(request_fid);
                     active_model.key = Set(vec_u8_to_hex_string(&body.key));
                     active_model.key_type = Set(body.key_type as i32);
                     active_model.metadata_type = Set(body.metadata_type as i32);

@@ -72,7 +72,6 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
         if !user_data_entities.is_empty() {
             service::mutation::Mutation::insert_user_data(db, user_data_entities).await?;
         }
-
         dbg!(&verifications);
         if !verifications.is_empty() {
             service::mutation::Mutation::insert_verfications(db, verifications).await?;
