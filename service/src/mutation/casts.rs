@@ -3,7 +3,7 @@ use chrono::Utc;
 use entity::casts;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, DatabaseBackend, DbConn, DbErr, EntityTrait, QueryTrait};
 
 impl Mutation {
     pub async fn insert_cast(db: &DbConn, cast: casts::ActiveModel) -> anyhow::Result<()> {
@@ -38,6 +38,7 @@ impl Mutation {
 
         if let Err(err) = res {
             if err != DbErr::RecordNotInserted {
+                dbg!(&err);
                 return Err(anyhow::Error::new(err));
             }
         }

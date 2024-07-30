@@ -29,20 +29,17 @@ impl MigrationTrait for Migration {
                     .col(
                         ColumnDef::new(Casts::Embeds)
                             .array(ColumnType::Text)
-                            .not_null()
-                            .extra("DEFAULT ARRAY[]::text[]"),
+                            .not_null(), // .extra("DEFAULT ARRAY[]"),
                     )
                     .col(
                         ColumnDef::new(Casts::Mentions)
                             .array(ColumnType::Integer)
-                            .not_null()
-                            .extra("DEFAULT array[]::integer[]"),
+                            .not_null(), // .extra("DEFAULT array[]"),
                     )
                     .col(
                         ColumnDef::new(Casts::MentionsPositions)
                             .array(ColumnType::Integer)
-                            .not_null()
-                            .extra("DEFAULT array[]::integer[]"),
+                            .not_null(), // .extra("DEFAULT array[]"),
                     )
                     .col(
                         ColumnDef::new(Casts::CreateAt)

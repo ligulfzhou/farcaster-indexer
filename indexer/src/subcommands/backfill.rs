@@ -24,21 +24,21 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .get_all_casts_by_fid(fid)
             .await?
             .into_iter()
-            .map(cast_message_to_entity)
+            .filter_map(cast_message_to_entity)
             .collect::<Vec<_>>();
 
         let reactions_entities = hub_client
             .get_all_reactions_by_fid(fid)
             .await?
             .into_iter()
-            .map(reaction_message_to_entity)
+            .filter_map(reaction_message_to_entity)
             .collect::<Vec<_>>();
 
         let links_entities = hub_client
             .get_all_links_by_fid(fid)
             .await?
             .into_iter()
-            .map(link_message_to_entity)
+            .filter_map(link_message_to_entity)
             .collect::<Vec<_>>();
 
         let user_data = hub_client.get_user_data_by_fid(fid).await?;
@@ -48,7 +48,7 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .get_user_verification_by_fid(fid)
             .await?
             .into_iter()
-            .map(verification_message_to_entity)
+            .filter_map(verification_message_to_entity)
             .collect::<Vec<_>>();
         let registrations = hub_client.get_all_registration_by_fid(fid).await?;
         let signers = hub_client.get_all_signers_by_fid(fid).await?;
@@ -56,7 +56,7 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .get_all_storage_by_fid(fid)
             .await?
             .into_iter()
-            .map(storage_message_to_entity)
+            .filter_map(storage_message_to_entity)
             .collect::<Vec<_>>();
 
         dbg!("casts, ", &casts_entities.len());
@@ -85,22 +85,24 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
         }
         dbg!("registrations: ", &registrations.len());
         for registration in registrations {
-            let entity = registration_message_to_entity(registration.clone());
-            if let Some(OnChainEventBody::IdRegisterEventBody(registration_body)) =
-                registration.body
-            {
-                if let Ok(event_type) = IdRegisterEventType::try_from(registration_body.event_type)
+            if let Some(entity) = registration_message_to_entity(registration.clone()) {
+                if let Some(OnChainEventBody::IdRegisterEventBody(registration_body)) =
+                    registration.body
                 {
-                    match event_type {
-                        IdRegisterEventType::None => {}
-                        IdRegisterEventType::Register => {
-                            service::mutation::Mutation::insert_fid(db, entity).await?;
-                        }
-                        IdRegisterEventType::Transfer => {
-                            service::mutation::Mutation::transfer(db, entity).await?;
-                        }
-                        IdRegisterEventType::ChangeRecovery => {
-                            service::mutation::Mutation::change_recovery(db, entity).await?;
+                    if let Ok(event_type) =
+                        IdRegisterEventType::try_from(registration_body.event_type)
+                    {
+                        match event_type {
+                            IdRegisterEventType::None => {}
+                            IdRegisterEventType::Register => {
+                                service::mutation::Mutation::insert_fid(db, entity).await?;
+                            }
+                            IdRegisterEventType::Transfer => {
+                                service::mutation::Mutation::transfer(db, entity).await?;
+                            }
+                            IdRegisterEventType::ChangeRecovery => {
+                                service::mutation::Mutation::change_recovery(db, entity).await?;
+                            }
                         }
                     }
                 }
@@ -109,17 +111,18 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
 
         dbg!("signers: ", &signers.len());
         for signer in signers {
-            let entity = signer_message_to_entity(signer.clone());
-            if let Some(OnChainEventBody::SignerEventBody(signer_body)) = signer.body {
-                if let Ok(event_type) = SignerEventType::try_from(signer_body.event_type) {
-                    match event_type {
-                        SignerEventType::Add => {
-                            service::mutation::Mutation::insert_signer(db, entity).await?;
+            if let Some(entity) = signer_message_to_entity(signer.clone()) {
+                if let Some(OnChainEventBody::SignerEventBody(signer_body)) = signer.body {
+                    if let Ok(event_type) = SignerEventType::try_from(signer_body.event_type) {
+                        match event_type {
+                            SignerEventType::Add => {
+                                service::mutation::Mutation::insert_signer(db, entity).await?;
+                            }
+                            SignerEventType::Remove => {
+                                service::mutation::Mutation::remove_signer(db, entity).await?;
+                            }
+                            _ => {}
                         }
-                        SignerEventType::Remove => {
-                            service::mutation::Mutation::remove_signer(db, entity).await?;
-                        }
-                        _ => {}
                     }
                 }
             }

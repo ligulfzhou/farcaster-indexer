@@ -40,7 +40,7 @@ fn format_embeds(embeds: Vec<Embed>) -> Vec<String> {
 
     value_array
 }
-pub fn cast_message_to_entity(message: Message) -> entity::casts::ActiveModel {
+pub fn cast_message_to_entity(message: Message) -> Option<entity::casts::ActiveModel> {
     let mut active_model = entity::casts::ActiveModel {
         hash: Set(vec_u8_to_hex_string(&message.hash)),
         ..Default::default()
@@ -51,6 +51,10 @@ pub fn cast_message_to_entity(message: Message) -> entity::casts::ActiveModel {
         active_model.timestamp = Set(farcaster_timestamp_to_datetime_with_tz(
             message_data.timestamp,
         ));
+        active_model.parent_fid = Set(None);
+        active_model.parent_hash = Set(None);
+        active_model.parent_url = Set(None);
+
         if let Some(Body::CastAddBody(cast_add_body)) = message_data.body {
             if let Some(parent) = cast_add_body.parent {
                 match parent {
@@ -76,14 +80,19 @@ pub fn cast_message_to_entity(message: Message) -> entity::casts::ActiveModel {
                 .map(|i| i as i32)
                 .collect());
         }
+    } else {
+        return None;
     }
 
-    active_model
+    Some(active_model)
 }
 
-pub fn reaction_message_to_entity(message: Message) -> entity::reactions::ActiveModel {
+pub fn reaction_message_to_entity(message: Message) -> Option<entity::reactions::ActiveModel> {
     let mut active_model = entity::reactions::ActiveModel {
         hash: Set(vec_u8_to_hex_string(&message.hash)),
+        target_cast_fid: Set(None),
+        target_cast_hash: Set(None),
+        target_url: Set(None),
         ..Default::default()
     };
 
@@ -109,14 +118,19 @@ pub fn reaction_message_to_entity(message: Message) -> entity::reactions::Active
 
             active_model.r#type = Set(body.r#type);
         }
+    } else {
+        return None;
     }
 
-    active_model
+    Some(active_model)
 }
 
-pub fn link_message_to_entity(message: Message) -> entity::links::ActiveModel {
+pub fn link_message_to_entity(message: Message) -> Option<entity::links::ActiveModel> {
     let mut active_model = entity::links::ActiveModel {
         hash: Set(vec_u8_to_hex_string(&message.hash)),
+        r#type: Set("".to_string()),
+        target_fid: Set(0i64),
+        display_timestamp: Set(None),
         ..Default::default()
     };
 
@@ -135,14 +149,18 @@ pub fn link_message_to_entity(message: Message) -> entity::links::ActiveModel {
                     Set(Some(farcaster_timestamp_to_datetime_with_tz(ts)));
             }
         }
+    } else {
+        return None;
     }
 
-    active_model
+    Some(active_model)
 }
 
-pub fn user_data_message_to_entity(message: Message) -> entity::user_data::ActiveModel {
+pub fn user_data_message_to_entity(message: Message) -> Option<entity::user_data::ActiveModel> {
     let mut active_model = entity::user_data::ActiveModel {
         hash: Set(vec_u8_to_hex_string(&message.hash)),
+        r#type: Set(0i32),
+        value: Set("".to_string()),
         ..Default::default()
     };
 
@@ -155,9 +173,11 @@ pub fn user_data_message_to_entity(message: Message) -> entity::user_data::Activ
             active_model.r#type = Set(body.r#type);
             active_model.value = Set(body.value);
         }
+    } else {
+        return None;
     }
 
-    active_model
+    Some(active_model)
 }
 
 fn get_user_data_type(message: Message) -> i32 {
@@ -179,13 +199,18 @@ pub fn user_data_messages_to_entity(messages: Vec<Message>) -> Vec<entity::user_
 
     type_to_message
         .into_values()
-        .map(user_data_message_to_entity)
+        .filter_map(user_data_message_to_entity)
         .collect::<Vec<_>>()
 }
 
-pub fn verification_message_to_entity(message: Message) -> entity::verifications::ActiveModel {
+pub fn verification_message_to_entity(
+    message: Message,
+) -> Option<entity::verifications::ActiveModel> {
     let mut active_model = entity::verifications::ActiveModel {
         hash: Set(vec_u8_to_hex_string(&message.hash)),
+        signature: Set("".to_string()),
+        block_hash: Set("".to_string()),
+        signer_address: Set("".to_string()),
         ..Default::default()
     };
 
@@ -199,14 +224,18 @@ pub fn verification_message_to_entity(message: Message) -> entity::verifications
             active_model.block_hash = Set(vec_u8_to_hex_string(&body.block_hash));
             active_model.signer_address = Set(vec_u8_to_hex_string(&body.address));
         }
+    } else {
+        return None;
     }
 
-    active_model
+    Some(active_model)
 }
 
-pub fn registration_message_to_entity(event: OnChainEvent) -> entity::fids::ActiveModel {
+pub fn registration_message_to_entity(event: OnChainEvent) -> Option<entity::fids::ActiveModel> {
     let mut active_model = entity::fids::ActiveModel {
         fid: Set(event.fid as i64),
+        custody_address: Set("".to_string()),
+        recovery_address: Set("".to_string()),
         register_at: Set(farcaster_timestamp_to_datetime_with_tz(
             event.block_timestamp as u32,
         )),
@@ -217,9 +246,11 @@ pub fn registration_message_to_entity(event: OnChainEvent) -> entity::fids::Acti
     if let Some(OnChainEventBody::IdRegisterEventBody(body)) = event.body {
         active_model.custody_address = Set(vec_u8_to_hex_string(&body.to));
         active_model.recovery_address = Set(vec_u8_to_hex_string(&body.recovery_address));
+    } else {
+        return None;
     }
 
-    active_model
+    Some(active_model)
 }
 
 fn decode_abi_parameters(metadata: &[u8]) -> (i64, String, String, i64) {
@@ -268,7 +299,7 @@ fn decode_abi_parameters(metadata: &[u8]) -> (i64, String, String, i64) {
 }
 
 // todo: parse abi parameters from metadata
-pub fn signer_message_to_entity(event: OnChainEvent) -> entity::signers::ActiveModel {
+pub fn signer_message_to_entity(event: OnChainEvent) -> Option<entity::signers::ActiveModel> {
     let mut active_model = entity::signers::ActiveModel {
         fid: Set(event.fid as i64),
         updated_at: Set(Utc::now().into()),
@@ -309,12 +340,14 @@ pub fn signer_message_to_entity(event: OnChainEvent) -> entity::signers::ActiveM
                 SignerEventType::AdminReset => {}
             }
         }
+    } else {
+        return None;
     }
 
-    active_model
+    Some(active_model)
 }
 
-pub fn storage_message_to_entity(event: OnChainEvent) -> entity::storage::ActiveModel {
+pub fn storage_message_to_entity(event: OnChainEvent) -> Option<entity::storage::ActiveModel> {
     let mut active_model = entity::storage::ActiveModel {
         fid: Set(event.fid as i64),
         updated_at: Set(Utc::now().into()),
@@ -327,7 +360,9 @@ pub fn storage_message_to_entity(event: OnChainEvent) -> entity::storage::Active
         active_model.units = Set(body.units as i32);
         active_model.payer = Set(vec_u8_to_hex_string(&body.payer));
         active_model.expires_at = Set(farcaster_timestamp_to_datetime_with_tz(body.expiry));
+    } else {
+        return None;
     }
 
-    active_model
+    Some(active_model)
 }
