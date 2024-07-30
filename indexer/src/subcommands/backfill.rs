@@ -57,8 +57,8 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .collect::<Vec<_>>();
 
         dbg!(&casts_entities);
-        for entity in casts_entities {
-            service::mutation::Mutation::insert_cast(db, entity).await?;
+        if !casts_entities.is_empty() {
+            service::mutation::Mutation::insert_casts(db, casts_entities).await?;
         }
         dbg!(&reactions_entities);
         if !reactions_entities.is_empty() {
