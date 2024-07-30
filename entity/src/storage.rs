@@ -9,7 +9,7 @@ pub struct Model {
     pub id: i32,
     pub fid: i64,
     pub units: i32,
-    #[sea_orm(column_type = "Text", unique)]
+    #[sea_orm(column_type = "Text")]
     pub payer: String,
     pub create_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,

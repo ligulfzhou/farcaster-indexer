@@ -28,21 +28,21 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Casts::Text).text().not_null())
                     .col(
                         ColumnDef::new(Casts::Embeds)
-                            .json()
+                            .array(ColumnType::Text)
                             .not_null()
-                            .default("[]"),
+                            .extra("DEFAULT ARRAY[]::text[]"),
                     )
                     .col(
                         ColumnDef::new(Casts::Mentions)
-                            .json()
+                            .array(ColumnType::Integer)
                             .not_null()
-                            .default("[]"),
+                            .extra("DEFAULT array[]::integer[]"),
                     )
                     .col(
                         ColumnDef::new(Casts::MentionsPositions)
-                            .json()
+                            .array(ColumnType::Integer)
                             .not_null()
-                            .default("[]"),
+                            .extra("DEFAULT array[]::integer[]"),
                     )
                     .col(
                         ColumnDef::new(Casts::CreateAt)

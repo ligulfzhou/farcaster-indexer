@@ -21,9 +21,9 @@ pub struct Model {
     pub parent_url: Option<String>,
     #[sea_orm(column_type = "Text")]
     pub text: String,
-    pub embeds: Json,
-    pub mentions: Json,
-    pub mentions_positions: Json,
+    pub embeds: Vec<String>,
+    pub mentions: Vec<i32>,
+    pub mentions_positions: Vec<i32>,
     pub create_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
     pub timestamp: DateTimeWithTimeZone,

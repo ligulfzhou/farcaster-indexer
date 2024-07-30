@@ -8,31 +8,37 @@ use crate::utils::{farcaster_timestamp_to_datetime_with_tz, vec_u8_to_hex_string
 use chrono::Utc;
 use entity::sea_orm::ActiveValue::Set;
 use ethereum_abi::{Param as EthParam, Type, Value as EthValue};
-use serde_json::{json, Value};
+use serde_json::json;
 use std::collections::HashMap;
 use std::string::String;
 
-fn format_embeds(embeds: Vec<Embed>) -> Value {
+fn format_embeds(embeds: Vec<Embed>) -> Vec<String> {
     let value_array = embeds
         .into_iter()
         .filter_map(|embed| {
             if let Some(inner) = embed.embed {
                 match inner {
-                    InnerEmbed::Url(url) => Some(json!({
-                        "url": url
-                    })),
-                    InnerEmbed::CastId(cast_id) => Some(json!({
-                        "fid": cast_id.fid,
-                        "hash": vec_u8_to_hex_string(&cast_id.hash)
-                    })),
+                    InnerEmbed::Url(url) => Some(
+                        json!({
+                            "url": url,
+                        })
+                        .to_string(),
+                    ),
+                    InnerEmbed::CastId(cast_id) => Some(
+                        json!({
+                            "fid": cast_id.fid,
+                            "hash": vec_u8_to_hex_string(&cast_id.hash)
+                        })
+                        .to_string(),
+                    ),
                 }
             } else {
                 None
             }
         })
-        .collect::<Vec<Value>>();
+        .collect::<Vec<_>>();
 
-    Value::Array(value_array)
+    value_array
 }
 pub fn cast_message_to_entity(message: Message) -> entity::casts::ActiveModel {
     let mut active_model = entity::casts::ActiveModel {
@@ -58,15 +64,17 @@ pub fn cast_message_to_entity(message: Message) -> entity::casts::ActiveModel {
             }
 
             active_model.text = Set(cast_add_body.text);
-            if !cast_add_body.embeds.is_empty() {
-                active_model.embeds = Set(format_embeds(cast_add_body.embeds));
-            }
-            if !cast_add_body.mentions.is_empty() {
-                active_model.mentions = Set(json!(cast_add_body.mentions));
-            }
-            if !cast_add_body.mentions_positions.is_empty() {
-                active_model.mentions_positions = Set(json!(cast_add_body.mentions_positions));
-            }
+            active_model.embeds = Set(format_embeds(cast_add_body.embeds));
+            active_model.mentions = Set(cast_add_body
+                .mentions
+                .into_iter()
+                .map(|i| i as i32)
+                .collect());
+            active_model.mentions_positions = Set(cast_add_body
+                .mentions_positions
+                .into_iter()
+                .map(|i| i as i32)
+                .collect());
         }
     }
 
