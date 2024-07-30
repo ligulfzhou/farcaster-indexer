@@ -61,7 +61,7 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
 
         dbg!("casts, ", &casts_entities.len());
         for chunk in casts_entities.chunks(CHUNK_SIZE) {
-            service::mutation::Mutation::insert_casts(db, chunk.to_owned()).await?;
+            service::mutation::Mutation::insert_casts(db, chunk.to_vec()).await?;
         }
         // for entity in casts_entities {
         //     service::mutation::Mutation::insert_cast(db, entity).await?;
@@ -69,19 +69,19 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
 
         dbg!("reaction: ", &reactions_entities.len());
         for chunk in reactions_entities.chunks(CHUNK_SIZE) {
-            service::mutation::Mutation::insert_reactions(db, chunk.to_owned()).await?;
+            service::mutation::Mutation::insert_reactions(db, chunk.to_vec()).await?;
         }
         dbg!("links: ", &links_entities.len());
         for chunk in links_entities.chunks(CHUNK_SIZE) {
-            service::mutation::Mutation::insert_links(db, chunk.to_owned()).await?;
+            service::mutation::Mutation::insert_links(db, chunk.to_vec()).await?;
         }
         dbg!("user_data: ", &user_data_entities.len());
         for chunk in user_data_entities.chunks(CHUNK_SIZE) {
-            service::mutation::Mutation::insert_user_data(db, chunk.to_owned()).await?;
+            service::mutation::Mutation::insert_user_data(db, chunk.to_vec()).await?;
         }
         dbg!("verification: ", &verifications.len());
         for chunk in verifications.chunks(CHUNK_SIZE) {
-            service::mutation::Mutation::insert_verfications(db, chunk.to_owned()).await?;
+            service::mutation::Mutation::insert_verfications(db, chunk.to_vec()).await?;
         }
         dbg!("registrations: ", &registrations.len());
         for registration in registrations {

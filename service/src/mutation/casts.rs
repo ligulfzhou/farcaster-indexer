@@ -3,7 +3,7 @@ use chrono::Utc;
 use entity::casts;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, DatabaseBackend, DbConn, DbErr, EntityTrait, QueryTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 impl Mutation {
     pub async fn insert_cast(db: &DbConn, cast: casts::ActiveModel) -> anyhow::Result<()> {
@@ -46,15 +46,15 @@ impl Mutation {
         Ok(())
     }
 
-    pub async fn delete_cast(db: &DbConn, id: i32) -> anyhow::Result<()> {
-        let mut cast: casts::ActiveModel = casts::Entity::find_by_id(id)
+    pub async fn delete_cast_by_hash(db: &DbConn, hash: &str) -> anyhow::Result<()> {
+        let mut cast: casts::ActiveModel = casts::Entity::find()
+            .filter(casts::Column::Fid.eq(hash))
             .one(db)
             .await?
-            .ok_or(DbErr::RecordNotFound(format!("cast#{}", id)))
+            .ok_or(DbErr::RecordNotFound(format!("cast#{}", hash)))
             .map(Into::into)?;
 
         cast.deleted_at = Set(Some(Utc::now().into()));
-
         cast.update(db).await?;
 
         Ok(())

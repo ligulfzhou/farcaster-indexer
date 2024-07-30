@@ -5,10 +5,12 @@ use farcaster_client::{
     grpc::{
         hub_event::Body as EventBody, message_data::Body as MessageDataBody, HubEvent, HubEventType,
     },
+    to_entity::cast_message_to_entity,
+    utils::vec_u8_to_hex_string,
 };
 use lapin::{message::DeliveryResult, options::BasicAckOptions, ConsumerDelegate};
 use prost::Message;
-use service::sea_orm::DbConn;
+use service::sea_orm::{Database, DbConn};
 use std::future::Future;
 use std::pin::Pin;
 
@@ -22,18 +24,21 @@ pub async fn run(db: &DbConn, mut hub_client: Client) -> anyhow::Result<()> {
     });
 
     let (conn, consumer) = get_consumer().await;
-    let delegate = Delegate { db: db.clone() };
+    let delegate = Delegate;
     consumer.set_delegate(delegate);
     conn.run().expect("consume message forever");
     Ok(())
 }
 
-struct Delegate {
-    db: DbConn,
-}
+struct Delegate;
 
 impl Delegate {
-    pub async fn process_event(event: HubEvent) {
+    pub async fn process_event(event: HubEvent) -> anyhow::Result<()> {
+        let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL not found.");
+        let db = Database::connect(database_url)
+            .await
+            .expect("database connection failed.");
+
         let event_type = event.r#type();
         let event_body = event.body.unwrap();
 
@@ -46,10 +51,15 @@ impl Delegate {
                             if let Some(message_body) = message_data.body {
                                 match message_body {
                                     MessageDataBody::CastAddBody(_body) => {
-                                        // let entity =
+                                        if let Some(entity) = cast_message_to_entity(message_clone)
+                                        {
+                                            service::mutation::Mutation::insert_cast(&db, entity)
+                                                .await?;
+                                        }
                                     }
                                     MessageDataBody::CastRemoveBody(crb) => {
                                         println!("crb: {:?}", crb);
+                                        let hash = vec_u8_to_hex_string(&crb.target_hash);
                                     }
                                     _ => {
                                         println!("tttttt");
@@ -67,6 +77,8 @@ impl Delegate {
                 dbg!("UNHANDLED HUB EVENT, ", event.id);
             }
         }
+
+        todo!()
     }
 }
 
@@ -84,6 +96,7 @@ impl ConsumerDelegate for Delegate {
                 let rs = HubEvent::decode(buf).expect("decode data");
 
                 println!("rs: {:?}", rs);
+                // println!("db: {:?}", self.db);
                 Self::process_event(rs).await;
 
                 deliveried_clone

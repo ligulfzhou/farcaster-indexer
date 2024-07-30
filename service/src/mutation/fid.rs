@@ -36,7 +36,6 @@ impl Mutation {
             .unwrap()
             .into();
 
-        // Update name attribute
         f.custody_address = fid.custody_address;
         f.updated_at = fid.updated_at;
 
@@ -53,7 +52,6 @@ impl Mutation {
             .unwrap()
             .into();
 
-        // Update name attribute
         f.recovery_address = fid.recovery_address;
         f.updated_at = fid.updated_at;
 
