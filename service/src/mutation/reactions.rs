@@ -6,9 +6,16 @@ use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait};
 
 impl Mutation {
-    pub async fn insert_reaction(db: &DbConn, cast: reactions::ActiveModel) -> anyhow::Result<()> {
-        let res = reactions::Entity::insert(cast)
-            .on_conflict(OnConflict::new().do_nothing().to_owned())
+    pub async fn insert_reaction(
+        db: &DbConn,
+        reaction: reactions::ActiveModel,
+    ) -> anyhow::Result<()> {
+        let res = reactions::Entity::insert(reaction)
+            .on_conflict(
+                OnConflict::column(reactions::Column::Hash)
+                    .do_nothing()
+                    .to_owned(),
+            )
             .exec(db)
             .await;
 
@@ -26,7 +33,11 @@ impl Mutation {
         casts: Vec<reactions::ActiveModel>,
     ) -> anyhow::Result<()> {
         let res = reactions::Entity::insert_many(casts)
-            .on_conflict(OnConflict::new().do_nothing().to_owned())
+            .on_conflict(
+                OnConflict::column(reactions::Column::Hash)
+                    .do_nothing()
+                    .to_owned(),
+            )
             .exec(db)
             .await;
 

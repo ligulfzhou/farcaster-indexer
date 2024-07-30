@@ -354,7 +354,12 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Fids::Fid).big_integer().not_null())
+                    .col(
+                        ColumnDef::new(Fids::Fid)
+                            .big_integer()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(
                         ColumnDef::new(Fids::RegisterAt)
                             .timestamp_with_time_zone()
@@ -422,6 +427,7 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+
         manager
             .create_index(
                 Index::create()
@@ -440,6 +446,19 @@ impl MigrationTrait for Migration {
                     .name("idx_signer_requester_fid")
                     .table(Signers::Table)
                     .col(Signers::RequesterFid)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .name("uniq_signer_fid_key")
+                    .table(Signers::Table)
+                    .col(Signers::Fid)
+                    .col(Signers::Key)
+                    .unique()
                     .to_owned(),
             )
             .await?;
