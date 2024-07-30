@@ -298,7 +298,6 @@ fn decode_abi_parameters(metadata: &[u8]) -> (i64, String, String, i64) {
     (t_rfid, t_rsigner, t_signature, t_deadline)
 }
 
-// todo: parse abi parameters from metadata
 pub fn signer_message_to_entity(event: OnChainEvent) -> Option<entity::signers::ActiveModel> {
     let mut active_model = entity::signers::ActiveModel {
         fid: Set(event.fid as i64),
@@ -312,9 +311,6 @@ pub fn signer_message_to_entity(event: OnChainEvent) -> Option<entity::signers::
             match event_type {
                 SignerEventType::None => {}
                 SignerEventType::Add => {
-                    let encoded_input = vec_u8_to_hex_string(&body.metadata);
-                    dbg!(&encoded_input);
-
                     // process abi parameters
                     let (request_fid, request_signer, signature, deadline) =
                         decode_abi_parameters(&body.metadata);
