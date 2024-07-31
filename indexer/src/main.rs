@@ -23,6 +23,8 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     let arg = Args::parse();
 
     let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL not found.");

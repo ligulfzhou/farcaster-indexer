@@ -9,6 +9,7 @@ use farcaster_client::{
     grpc::{on_chain_event::Body as OnChainEventBody, IdRegisterEventType},
 };
 use service::sea_orm::DbConn;
+use tracing::info;
 
 const CHUNK_SIZE: usize = 1000;
 
@@ -19,7 +20,7 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
     };
 
     for fid in 1..=max_fid_to_iterate {
-        println!("..............process fid#{:}................", fid);
+        info!("..............process fid#{:}................", fid);
         let casts_entities = hub_client
             .get_all_casts_by_fid(fid)
             .await?
@@ -59,27 +60,27 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             .filter_map(storage_message_to_entity)
             .collect::<Vec<_>>();
 
-        dbg!("casts, ", &casts_entities.len());
+        info!("casts: {:}", &casts_entities.len());
         for chunk in casts_entities.chunks(CHUNK_SIZE) {
             service::mutation::Mutation::insert_casts(db, chunk.to_vec()).await?;
         }
-        dbg!("reaction: ", &reactions_entities.len());
+        info!("reaction: {:}", &reactions_entities.len());
         for chunk in reactions_entities.chunks(CHUNK_SIZE) {
             service::mutation::Mutation::insert_reactions(db, chunk.to_vec()).await?;
         }
-        dbg!("links: ", &links_entities.len());
+        info!("links: {:}", &links_entities.len());
         for chunk in links_entities.chunks(CHUNK_SIZE) {
             service::mutation::Mutation::insert_links(db, chunk.to_vec()).await?;
         }
-        dbg!("user_data: ", &user_data_entities.len());
+        info!("user_data: {:}", &user_data_entities.len());
         for chunk in user_data_entities.chunks(CHUNK_SIZE) {
             service::mutation::Mutation::insert_user_data(db, chunk.to_vec()).await?;
         }
-        dbg!("verification: ", &verifications.len());
+        info!("verification: {:}", &verifications.len());
         for chunk in verifications.chunks(CHUNK_SIZE) {
             service::mutation::Mutation::insert_verfications(db, chunk.to_vec()).await?;
         }
-        dbg!("registrations: ", &registrations.len());
+        info!("registrations: {:}", &registrations.len());
         for registration in registrations {
             if let Some(entity) = registration_message_to_entity(registration.clone()) {
                 if let Some(OnChainEventBody::IdRegisterEventBody(registration_body)) =
@@ -105,7 +106,7 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             }
         }
 
-        dbg!("signers: ", &signers.len());
+        info!("signers: {:}", &signers.len());
         for signer in signers {
             if let Some(entity) = signer_message_to_entity(signer.clone()) {
                 if let Some(OnChainEventBody::SignerEventBody(signer_body)) = signer.body {
@@ -124,7 +125,7 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
             }
         }
 
-        dbg!("storages: ", &storages.len());
+        info!("storages: {:}", &storages.len());
         for storage in storages {
             service::mutation::Mutation::insert_storage(db, storage).await?;
         }
