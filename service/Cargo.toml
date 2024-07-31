@@ -9,3 +9,4 @@ anyhow = { workspace = true }
 chrono = { workspace = true }
 entity = { path = "../entity" }
 farcaster-client = { path = "../farcaster-client" }
+tracing = { workspace = true }

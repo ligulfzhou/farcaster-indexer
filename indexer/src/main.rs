@@ -1,10 +1,11 @@
+mod db;
 mod rabbitmq;
 mod redis;
 mod subcommands;
 
+use crate::db::get_db_conn;
 use clap::{Parser, Subcommand};
 use farcaster_client::client::Client;
-use service::sea_orm::Database;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -26,11 +27,10 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let arg = Args::parse();
-
     let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL not found.");
-    let db = Database::connect(database_url)
+    let db = get_db_conn(&database_url)
         .await
-        .expect("database connection failed.");
+        .expect("database connection failed");
 
     let hub_url = dotenv::var("HUB_GRPC").expect("HUB_GRPC not found.");
     let hub_client = Client::new(hub_url).await.expect("HUB_GRPC not valid");

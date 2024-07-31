@@ -107,9 +107,8 @@ pub fn reaction_message_to_entity(message: Message) -> Option<entity::reactions:
                 match target {
                     Target::TargetCastId(target_cast_id) => {
                         active_model.target_cast_fid = Set(Some(target_cast_id.fid as i64));
-                        active_model.target_cast_hash = Set(Some(
-                            String::from_utf8(target_cast_id.hash).unwrap_or("".to_string()),
-                        ));
+                        active_model.target_cast_hash =
+                            Set(Some(vec_u8_to_hex_string(&target_cast_id.hash)));
                     }
                     Target::TargetUrl(target_url) => {
                         active_model.target_url = Set(Some(target_url));

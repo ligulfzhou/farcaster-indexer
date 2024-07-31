@@ -30,9 +30,9 @@ impl Mutation {
 
     pub async fn insert_reactions(
         db: &DbConn,
-        casts: Vec<reactions::ActiveModel>,
+        reactions: Vec<reactions::ActiveModel>,
     ) -> anyhow::Result<()> {
-        let res = reactions::Entity::insert_many(casts)
+        let res = reactions::Entity::insert_many(reactions)
             .on_conflict(
                 OnConflict::column(reactions::Column::Hash)
                     .do_nothing()
