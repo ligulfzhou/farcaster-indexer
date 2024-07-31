@@ -9,6 +9,7 @@ use prost::Message as ProstMessage;
 use tokio::sync::mpsc::Sender;
 use tonic::codegen::tokio_stream::StreamExt;
 
+#[derive(Clone)]
 pub struct Client(pub HubServiceClient<tonic::transport::Channel>);
 
 impl Client {

@@ -1,6 +1,6 @@
 use crate::rabbitmq::{get_consumer, get_mq_queue_channel};
 use bytes::Bytes;
-use farcaster_client::grpc::MessageType;
+use farcaster_client::grpc::{MessageType, OnChainEventType};
 use farcaster_client::to_entity::verification_message_to_entity;
 use farcaster_client::utils::farcaster_timestamp_to_datetime_with_tz;
 use farcaster_client::{
@@ -90,28 +90,46 @@ impl Delegate {
                         MessageType::LinkCompactState => {}
                         _ => {}
                     }
-                    // match message_body {
-                    //     MessageDataBody::VerificationRemoveBody(body) => {
-                    //         let signer_address = vec_u8_to_hex_string(&body.address);
-                    //         service::mutation::Mutation::delete_verfication_by_fid_signer(
-                    //             &db,
-                    //             fid,
-                    //             &signer_address,
-                    //             timestamp,
-                    //         )
-                    //         .await?;
-                    //     }
-                    //     MessageDataBody::UserDataBody(body) => {}
-                    //     MessageDataBody::ReactionBody(body) => reaction_message_to_entity(body),
-                    //     _ => {
-                    //         println!("tttttt");
-                    //     }
-                    // }
                 }
             }
-            HubEventType::PruneMessage => {}
-            HubEventType::RevokeMessage => {}
-            HubEventType::MergeOnChainEvent => {}
+            HubEventType::PruneMessage => {
+                if let EventBody::PruneMessageBody(msg_body) = event_body {
+                    let message = msg_body.message.expect("get message from PruneMessageBody");
+                    let message_clone = message.clone();
+
+                    let message_data = message.data.expect("message data");
+                    let fid = message_data.fid as i64;
+                    let timestamp =
+                        farcaster_timestamp_to_datetime_with_tz(message_data.timestamp.into());
+                    let message_type = MessageType::try_from(message_data.r#type)?;
+                    let message_body = message_data.body.expect("message body should be there");
+
+                    match message_type {
+                        MessageType::CastAdd => {}
+                        MessageType::ReactionAdd => {}
+                        MessageType::LinkAdd => {}
+                        _ => {}
+                    }
+                }
+            }
+            HubEventType::RevokeMessage => {
+                // Events are emitted when a signer that was used to create a message is removed
+                // TODO: handle revoking messages
+            }
+            HubEventType::MergeOnChainEvent => {
+                if let EventBody::MergeOnChainEventBody(body) = event_body {
+                    let on_chain_event = body.on_chain_event.expect("get on-chain-event");
+                    let event_type = OnChainEventType::try_from(on_chain_event.r#type)?;
+
+                    match event_type {
+                        OnChainEventType::EventTypeSigner => {}
+                        OnChainEventType::EventTypeSignerMigrated => {}
+                        OnChainEventType::EventTypeIdRegister => {}
+                        OnChainEventType::EventTypeStorageRent => {}
+                        _ => {}
+                    }
+                }
+            }
             _ => {
                 dbg!("UNHANDLED HUB EVENT, ", event.id);
             }
