@@ -43,13 +43,14 @@ fn format_embeds(embeds: Vec<Embed>) -> Vec<String> {
 pub fn cast_message_to_entity(message: Message) -> Option<entity::casts::ActiveModel> {
     let mut active_model = entity::casts::ActiveModel {
         hash: Set(vec_u8_to_hex_string(&message.hash)),
+        parent_fid: Set(None),
         ..Default::default()
     };
 
     if let Some(message_data) = message.data {
         active_model.fid = Set(message_data.fid as i64);
         active_model.timestamp = Set(farcaster_timestamp_to_datetime_with_tz(
-            message_data.timestamp,
+            message_data.timestamp.into(),
         ));
         active_model.parent_fid = Set(None);
         active_model.parent_hash = Set(None);
@@ -99,7 +100,7 @@ pub fn reaction_message_to_entity(message: Message) -> Option<entity::reactions:
     if let Some(message_data) = message.data {
         active_model.fid = Set(message_data.fid as i64);
         active_model.timestamp = Set(farcaster_timestamp_to_datetime_with_tz(
-            message_data.timestamp,
+            message_data.timestamp.into(),
         ));
         if let Some(Body::ReactionBody(body)) = message_data.body {
             if let Some(target) = body.target {
@@ -137,7 +138,7 @@ pub fn link_message_to_entity(message: Message) -> Option<entity::links::ActiveM
     if let Some(message_data) = message.data {
         active_model.fid = Set(message_data.fid as i64);
         active_model.timestamp = Set(farcaster_timestamp_to_datetime_with_tz(
-            message_data.timestamp,
+            message_data.timestamp.into(),
         ));
         if let Some(Body::LinkBody(body)) = message_data.body {
             active_model.r#type = Set(body.r#type);
@@ -146,7 +147,7 @@ pub fn link_message_to_entity(message: Message) -> Option<entity::links::ActiveM
             }
             if let Some(ts) = body.display_timestamp {
                 active_model.display_timestamp =
-                    Set(Some(farcaster_timestamp_to_datetime_with_tz(ts)));
+                    Set(Some(farcaster_timestamp_to_datetime_with_tz(ts.into())));
             }
         }
     } else {
@@ -167,7 +168,7 @@ pub fn user_data_message_to_entity(message: Message) -> Option<entity::user_data
     if let Some(message_data) = message.data {
         active_model.fid = Set(message_data.fid as i64);
         active_model.timestamp = Set(farcaster_timestamp_to_datetime_with_tz(
-            message_data.timestamp,
+            message_data.timestamp.into(),
         ));
         if let Some(Body::UserDataBody(body)) = message_data.body {
             active_model.r#type = Set(body.r#type);
@@ -217,7 +218,7 @@ pub fn verification_message_to_entity(
     if let Some(message_data) = message.data {
         active_model.fid = Set(message_data.fid as i64);
         active_model.timestamp = Set(farcaster_timestamp_to_datetime_with_tz(
-            message_data.timestamp,
+            message_data.timestamp.into(),
         ));
         if let Some(Body::VerificationAddAddressBody(body)) = message_data.body {
             active_model.signature = Set(vec_u8_to_hex_string(&body.claim_signature));
@@ -237,7 +238,7 @@ pub fn registration_message_to_entity(event: OnChainEvent) -> Option<entity::fid
         custody_address: Set("".to_string()),
         recovery_address: Set("".to_string()),
         register_at: Set(farcaster_timestamp_to_datetime_with_tz(
-            event.block_timestamp as u32,
+            event.block_timestamp as i64,
         )),
         updated_at: Set(Utc::now().into()),
         ..Default::default()
@@ -264,11 +265,9 @@ fn decode_abi_parameters(metadata: &[u8]) -> (i64, String, String, i64) {
         ]),
         indexed: None,
     };
-    dbg!(&param);
 
     let decoded =
         EthValue::decode_from_slice(metadata, &[param.type_]).expect("TODO: panic message");
-    dbg!(&decoded);
 
     let metadata = decoded[0].clone();
 
@@ -304,7 +303,7 @@ pub fn signer_message_to_entity(event: OnChainEvent) -> Option<entity::signers::
         updated_at: Set(Utc::now().into()),
         ..Default::default()
     };
-    let timestamp = farcaster_timestamp_to_datetime_with_tz(event.block_timestamp as u32);
+    let timestamp = farcaster_timestamp_to_datetime_with_tz(event.block_timestamp as i64);
 
     if let Some(OnChainEventBody::SignerEventBody(body)) = event.body {
         if let Ok(event_type) = SignerEventType::try_from(body.event_type) {
@@ -349,13 +348,13 @@ pub fn storage_message_to_entity(event: OnChainEvent) -> Option<entity::storage:
         updated_at: Set(Utc::now().into()),
         ..Default::default()
     };
-    let timestamp = farcaster_timestamp_to_datetime_with_tz(event.block_timestamp as u32);
+    let timestamp = farcaster_timestamp_to_datetime_with_tz(event.block_timestamp as i64);
     active_model.rented_at = Set(timestamp);
 
     if let Some(OnChainEventBody::StorageRentEventBody(body)) = event.body {
         active_model.units = Set(body.units as i32);
         active_model.payer = Set(vec_u8_to_hex_string(&body.payer));
-        active_model.expires_at = Set(farcaster_timestamp_to_datetime_with_tz(body.expiry));
+        active_model.expires_at = Set(farcaster_timestamp_to_datetime_with_tz(body.expiry.into()));
     } else {
         return None;
     }

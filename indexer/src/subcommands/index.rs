@@ -1,5 +1,8 @@
 use crate::rabbitmq::{get_consumer, get_mq_queue_channel};
 use bytes::Bytes;
+use farcaster_client::grpc::MessageType;
+use farcaster_client::to_entity::verification_message_to_entity;
+use farcaster_client::utils::farcaster_timestamp_to_datetime_with_tz;
 use farcaster_client::{
     client::Client,
     grpc::{
@@ -45,29 +48,65 @@ impl Delegate {
         match event_type {
             HubEventType::MergeMessage => {
                 if let EventBody::MergeMessageBody(msg_body) = event_body {
-                    if let Some(message) = msg_body.message {
-                        let message_clone = message.clone();
-                        if let Some(message_data) = message.data {
-                            if let Some(message_body) = message_data.body {
-                                match message_body {
-                                    MessageDataBody::CastAddBody(_body) => {
-                                        if let Some(entity) = cast_message_to_entity(message_clone)
-                                        {
-                                            service::mutation::Mutation::insert_cast(&db, entity)
-                                                .await?;
-                                        }
-                                    }
-                                    MessageDataBody::CastRemoveBody(crb) => {
-                                        println!("crb: {:?}", crb);
-                                        let hash = vec_u8_to_hex_string(&crb.target_hash);
-                                    }
-                                    _ => {
-                                        println!("tttttt");
-                                    }
-                                }
+                    let message = msg_body.message.expect("get message from MergeMessageBody");
+                    let message_clone = message.clone();
+
+                    let message_data = message.data.expect("message data");
+                    let fid = message_data.fid as i64;
+                    let timestamp =
+                        farcaster_timestamp_to_datetime_with_tz(message_data.timestamp.into());
+                    let message_type = MessageType::try_from(message_data.r#type)?;
+                    let message_body = message_data.body.expect("message body should be there");
+
+                    match message_type {
+                        MessageType::CastAdd => {
+                            if let Some(entity) = cast_message_to_entity(message_clone) {
+                                service::mutation::Mutation::insert_cast(&db, entity).await?;
                             }
                         }
+                        MessageType::CastRemove => {
+                            if let MessageDataBody::CastRemoveBody(body) = message_body {
+                                let hash = vec_u8_to_hex_string(&body.target_hash);
+                                service::mutation::Mutation::delete_cast_by_hash(
+                                    &db, &hash, timestamp,
+                                )
+                                .await?;
+                            }
+                        }
+                        MessageType::ReactionAdd => {}
+                        MessageType::ReactionRemove => {}
+                        MessageType::LinkAdd => {}
+                        MessageType::LinkRemove => {}
+                        MessageType::VerificationAddEthAddress => {
+                            if let Some(entity) = verification_message_to_entity(message_clone) {
+                                service::mutation::Mutation::insert_verfications(&db, vec![entity])
+                                    .await?;
+                            }
+                        }
+                        MessageType::VerificationRemove => {}
+                        MessageType::UserDataAdd => {}
+                        MessageType::UsernameProof => {}
+                        MessageType::FrameAction => {}
+                        MessageType::LinkCompactState => {}
+                        _ => {}
                     }
+                    // match message_body {
+                    //     MessageDataBody::VerificationRemoveBody(body) => {
+                    //         let signer_address = vec_u8_to_hex_string(&body.address);
+                    //         service::mutation::Mutation::delete_verfication_by_fid_signer(
+                    //             &db,
+                    //             fid,
+                    //             &signer_address,
+                    //             timestamp,
+                    //         )
+                    //         .await?;
+                    //     }
+                    //     MessageDataBody::UserDataBody(body) => {}
+                    //     MessageDataBody::ReactionBody(body) => reaction_message_to_entity(body),
+                    //     _ => {
+                    //         println!("tttttt");
+                    //     }
+                    // }
                 }
             }
             HubEventType::PruneMessage => {}
@@ -97,7 +136,7 @@ impl ConsumerDelegate for Delegate {
 
                 println!("rs: {:?}", rs);
                 // println!("db: {:?}", self.db);
-                Self::process_event(rs).await;
+                Self::process_event(rs).await.expect("process event");
 
                 deliveried_clone
                     .ack(BasicAckOptions::default())

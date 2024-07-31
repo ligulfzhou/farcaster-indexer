@@ -1,6 +1,7 @@
 use crate::mutation::Mutation;
 use chrono::Utc;
 use entity::casts;
+use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
@@ -46,7 +47,11 @@ impl Mutation {
         Ok(())
     }
 
-    pub async fn delete_cast_by_hash(db: &DbConn, hash: &str) -> anyhow::Result<()> {
+    pub async fn delete_cast_by_hash(
+        db: &DbConn,
+        hash: &str,
+        deleted_at: DateTimeWithTimeZone,
+    ) -> anyhow::Result<()> {
         let mut cast: casts::ActiveModel = casts::Entity::find()
             .filter(casts::Column::Fid.eq(hash))
             .one(db)
@@ -54,7 +59,8 @@ impl Mutation {
             .ok_or(DbErr::RecordNotFound(format!("cast#{}", hash)))
             .map(Into::into)?;
 
-        cast.deleted_at = Set(Some(Utc::now().into()));
+        cast.deleted_at = Set(Some(deleted_at));
+        cast.updated_at = Set(Utc::now().into());
         cast.update(db).await?;
 
         Ok(())

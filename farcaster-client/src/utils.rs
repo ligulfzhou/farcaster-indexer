@@ -1,14 +1,14 @@
 use chrono::{TimeZone, Utc};
 use entity::sea_orm::prelude::DateTimeWithTimeZone;
 
-pub fn farcaster_timestamp_to_realworld_timestamp(timestamp: u32) -> u32 {
+pub fn farcaster_timestamp_to_realworld_timestamp(timestamp: i64) -> i64 {
     1609430400 + timestamp
 }
 
-pub fn farcaster_timestamp_to_datetime_with_tz(timestamp: u32) -> DateTimeWithTimeZone {
+pub fn farcaster_timestamp_to_datetime_with_tz(timestamp: i64) -> DateTimeWithTimeZone {
     let ts = farcaster_timestamp_to_realworld_timestamp(timestamp);
 
-    Utc.timestamp_opt(ts as i64, 0).unwrap().into()
+    Utc.timestamp_opt(ts, 0).unwrap().into()
 }
 
 pub fn vec_u8_to_hex_string(vec_u8: &[u8]) -> String {

@@ -63,10 +63,6 @@ pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::R
         for chunk in casts_entities.chunks(CHUNK_SIZE) {
             service::mutation::Mutation::insert_casts(db, chunk.to_vec()).await?;
         }
-        // for entity in casts_entities {
-        //     service::mutation::Mutation::insert_cast(db, entity).await?;
-        // }
-
         dbg!("reaction: ", &reactions_entities.len());
         for chunk in reactions_entities.chunks(CHUNK_SIZE) {
             service::mutation::Mutation::insert_reactions(db, chunk.to_vec()).await?;
