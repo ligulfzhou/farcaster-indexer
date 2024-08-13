@@ -2,7 +2,8 @@ use crate::rabbitmq::{get_consumer, get_mq_queue_channel};
 use bytes::Bytes;
 use farcaster_client::grpc::{MessageType, OnChainEventType};
 use farcaster_client::to_entity::{
-    link_message_to_entity, reaction_message_to_entity, user_data_message_to_entity,
+    link_message_to_entity, reaction_message_to_entity, registration_message_to_entity,
+    signer_message_to_entity, storage_message_to_entity, user_data_message_to_entity,
     verification_message_to_entity,
 };
 use farcaster_client::utils::farcaster_timestamp_to_datetime_with_tz;
@@ -118,16 +119,18 @@ impl Delegate {
                     let message_clone = message.clone();
 
                     let message_data = message.data.expect("message data");
-                    let fid = message_data.fid as i64;
-                    let timestamp =
-                        farcaster_timestamp_to_datetime_with_tz(message_data.timestamp.into());
                     let message_type = MessageType::try_from(message_data.r#type)?;
-                    let message_body = message_data.body.expect("message body should be there");
 
                     match message_type {
-                        MessageType::CastAdd => {}
-                        MessageType::ReactionAdd => {}
-                        MessageType::LinkAdd => {}
+                        MessageType::CastAdd => {
+                            if let Some(entity) = cast_message_to_entity(message_clone) {}
+                        }
+                        MessageType::ReactionAdd => {
+                            if let Some(entity) = reaction_message_to_entity(message_clone) {}
+                        }
+                        MessageType::LinkAdd => {
+                            if let Some(entity) = link_message_to_entity(message_clone) {}
+                        }
                         _ => {}
                     }
                 }
@@ -142,10 +145,22 @@ impl Delegate {
                     let event_type = OnChainEventType::try_from(on_chain_event.r#type)?;
 
                     match event_type {
-                        OnChainEventType::EventTypeSigner => {}
-                        OnChainEventType::EventTypeSignerMigrated => {}
-                        OnChainEventType::EventTypeIdRegister => {}
-                        OnChainEventType::EventTypeStorageRent => {}
+                        OnChainEventType::EventTypeSigner => {
+                            if let Some(entity) = signer_message_to_entity(on_chain_event) {
+                                service::mutation::Mutation::insert_signer(&db, entity).await?;
+                            }
+                        }
+                        // OnChainEventType::EventTypeSignerMigrated => {}
+                        OnChainEventType::EventTypeIdRegister => {
+                            if let Some(entity) = registration_message_to_entity(on_chain_event) {
+                                service::mutation::Mutation::insert_fid(&db, entity).await?;
+                            }
+                        }
+                        OnChainEventType::EventTypeStorageRent => {
+                            if let Some(entity) = storage_message_to_entity(on_chain_event) {
+                                service::mutation::Mutation::insert_storage(&db, entity).await?;
+                            }
+                        }
                         _ => {}
                     }
                 }

@@ -1,6 +1,7 @@
 # Farcaster Indexer
 
-This is an Rust version of [Farcaster-Indexer](https://github.com/gskril/farcaster-indexer) which listens for messages
+This is a Rust version of [Farcaster-Indexer](https://github.com/gskril/farcaster-indexer)
+by [gskril](https://github.com/gskril) which listens for messages
 from
 a [Farcaster Hub](https://docs.farcaster.xyz/learn/architecture/hubs)
 and inserts relevant data into a postgres database.
@@ -16,7 +17,7 @@ git clone https://github.com/ligulfzhou/farcaster-indexer
 Run the latest database migrations
 
 ```bash
-cd ./migration;
+cd migration
 export DATABASE_URL=postgresql://username:password@localhost/farcaster
 cargo run
 ```
@@ -30,11 +31,13 @@ sea-orm-cli generate entity -u postgresql://username:password@localhost/farcaste
 Run the indexer
 
 ```bash
+cd indexer;
+
 # Recommended to get the full state. You only need to run this once.
 # Streaming will start after the backfill is complete.
-yarn run backfill
+cargo run backfill
 
 # Ignores backfill and start streaming from the latest recorded event.
 # You should run this after one initial backfill.
-yarn start
+cargo run index
 ```
