@@ -1,7 +1,10 @@
 use crate::rabbitmq::{get_consumer, get_mq_queue_channel};
 use bytes::Bytes;
 use farcaster_client::grpc::{MessageType, OnChainEventType};
-use farcaster_client::to_entity::verification_message_to_entity;
+use farcaster_client::to_entity::{
+    link_message_to_entity, reaction_message_to_entity, user_data_message_to_entity,
+    verification_message_to_entity,
+};
 use farcaster_client::utils::farcaster_timestamp_to_datetime_with_tz;
 use farcaster_client::{
     client::Client,
@@ -73,9 +76,21 @@ impl Delegate {
                                 .await?;
                             }
                         }
-                        MessageType::ReactionAdd => {}
-                        MessageType::ReactionRemove => {}
-                        MessageType::LinkAdd => {}
+                        MessageType::ReactionAdd => {
+                            if let Some(entity) = reaction_message_to_entity(message_clone) {
+                                service::mutation::Mutation::insert_reaction(&db, entity).await?;
+                            }
+                        }
+                        MessageType::ReactionRemove => {
+                            if let Some(entity) = reaction_message_to_entity(message_clone) {
+                                service::mutation::Mutation::delete_reaction(&db, entity).await?;
+                            }
+                        }
+                        MessageType::LinkAdd => {
+                            if let Some(entity) = link_message_to_entity(message_clone) {
+                                service::mutation::Mutation::insert_link(&db, entity).await?;
+                            }
+                        }
                         MessageType::LinkRemove => {}
                         MessageType::VerificationAddEthAddress => {
                             if let Some(entity) = verification_message_to_entity(message_clone) {
@@ -84,9 +99,14 @@ impl Delegate {
                             }
                         }
                         MessageType::VerificationRemove => {}
-                        MessageType::UserDataAdd => {}
+                        MessageType::UserDataAdd => {
+                            if let Some(entity) = user_data_message_to_entity(message_clone) {
+                                service::mutation::Mutation::insert_user_data(&db, vec![entity])
+                                    .await?;
+                            }
+                        }
                         MessageType::UsernameProof => {}
-                        MessageType::FrameAction => {}
+                        // MessageType::FrameAction => {}
                         MessageType::LinkCompactState => {}
                         _ => {}
                     }
