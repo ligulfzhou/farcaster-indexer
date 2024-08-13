@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use std::string::String;
 
 fn format_embeds(embeds: Vec<Embed>) -> Vec<String> {
-    let value_array = embeds
+    embeds
         .into_iter()
         .filter_map(|embed| {
             if let Some(inner) = embed.embed {
@@ -36,9 +36,7 @@ fn format_embeds(embeds: Vec<Embed>) -> Vec<String> {
                 None
             }
         })
-        .collect::<Vec<_>>();
-
-    value_array
+        .collect::<Vec<_>>()
 }
 pub fn cast_message_to_entity(message: Message) -> Option<entity::casts::ActiveModel> {
     let mut active_model = entity::casts::ActiveModel {
