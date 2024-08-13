@@ -22,7 +22,7 @@ use service::sea_orm::{Database, DbConn};
 use std::future::Future;
 use std::pin::Pin;
 
-pub async fn run(db: &DbConn, mut hub_client: Client) -> anyhow::Result<()> {
+pub async fn run(_db: &DbConn, mut hub_client: Client) -> anyhow::Result<()> {
     let (_, queue, chan) = get_mq_queue_channel().await;
     tokio::spawn(async move {
         hub_client

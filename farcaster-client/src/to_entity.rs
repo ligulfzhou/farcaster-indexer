@@ -73,6 +73,7 @@ pub fn cast_message_to_entity(message: Message) -> Option<entity::casts::ActiveM
                 .into_iter()
                 .map(|i| i as i32)
                 .collect());
+
             active_model.mentions_positions = Set(cast_add_body
                 .mentions_positions
                 .into_iter()
