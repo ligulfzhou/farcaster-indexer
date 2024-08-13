@@ -65,4 +65,25 @@ impl Mutation {
 
         Ok(())
     }
+
+    pub async fn prune_cast(db: &DbConn, cast: casts::ActiveModel) -> anyhow::Result<()> {
+        let fid = cast.fid.unwrap();
+        let text = cast.text.unwrap();
+        let mut cast_am: casts::ActiveModel = casts::Entity::find()
+            .filter(casts::Column::Fid.eq(fid))
+            .filter(casts::Column::Text.eq(text.clone()))
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound(format!(
+                "cast_with_fid_text#{:?}, {:?}",
+                fid, text
+            )))
+            .map(Into::into)?;
+
+        cast_am.pruned_at = Set(Some(cast.timestamp.unwrap()));
+        cast_am.updated_at = Set(Utc::now().into());
+        cast_am.update(db).await?;
+
+        Ok(())
+    }
 }

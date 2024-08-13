@@ -1,5 +1,6 @@
 use crate::rabbitmq::{get_consumer, get_mq_queue_channel};
 use bytes::Bytes;
+use chrono::Utc;
 use farcaster_client::grpc::{MessageType, OnChainEventType};
 use farcaster_client::to_entity::{
     link_message_to_entity, reaction_message_to_entity, registration_message_to_entity,
@@ -92,23 +93,38 @@ impl Delegate {
                                 service::mutation::Mutation::insert_link(&db, entity).await?;
                             }
                         }
-                        MessageType::LinkRemove => {}
+                        MessageType::LinkRemove => {
+                            if let Some(entity) = link_message_to_entity(message_clone) {
+                                service::mutation::Mutation::delete_link(&db, entity).await?;
+                            }
+                        }
                         MessageType::VerificationAddEthAddress => {
                             if let Some(entity) = verification_message_to_entity(message_clone) {
                                 service::mutation::Mutation::insert_verfications(&db, vec![entity])
                                     .await?;
                             }
                         }
-                        MessageType::VerificationRemove => {}
+                        MessageType::VerificationRemove => {
+                            if let MessageDataBody::VerificationRemoveBody(body) = message_body {
+                                let signer_address = vec_u8_to_hex_string(&body.address);
+                                service::mutation::Mutation::delete_verfication_by_fid_signer(
+                                    &db,
+                                    fid,
+                                    &signer_address,
+                                    Utc::now().into(),
+                                )
+                                .await?;
+                            }
+                        }
                         MessageType::UserDataAdd => {
                             if let Some(entity) = user_data_message_to_entity(message_clone) {
                                 service::mutation::Mutation::insert_user_data(&db, vec![entity])
                                     .await?;
                             }
                         }
-                        MessageType::UsernameProof => {}
+                        // MessageType::UsernameProof => {}
                         // MessageType::FrameAction => {}
-                        MessageType::LinkCompactState => {}
+                        // MessageType::LinkCompactState => {}
                         _ => {}
                     }
                 }
@@ -123,13 +139,19 @@ impl Delegate {
 
                     match message_type {
                         MessageType::CastAdd => {
-                            if let Some(entity) = cast_message_to_entity(message_clone) {}
+                            if let Some(entity) = cast_message_to_entity(message_clone) {
+                                service::mutation::Mutation::prune_cast(&db, entity).await?;
+                            }
                         }
                         MessageType::ReactionAdd => {
-                            if let Some(entity) = reaction_message_to_entity(message_clone) {}
+                            if let Some(entity) = reaction_message_to_entity(message_clone) {
+                                service::mutation::Mutation::prune_reaction(&db, entity).await?;
+                            }
                         }
                         MessageType::LinkAdd => {
-                            if let Some(entity) = link_message_to_entity(message_clone) {}
+                            if let Some(entity) = link_message_to_entity(message_clone) {
+                                service::mutation::Mutation::prune_link(&db, entity).await?;
+                            }
                         }
                         _ => {}
                     }

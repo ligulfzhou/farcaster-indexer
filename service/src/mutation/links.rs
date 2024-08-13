@@ -1,9 +1,9 @@
 use crate::mutation::Mutation;
 use chrono::Utc;
-use entity::links;
+use entity::{casts, links, reactions};
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, QueryOrder};
 
 impl Mutation {
     pub async fn insert_link(db: &DbConn, link: links::ActiveModel) -> anyhow::Result<()> {
@@ -36,15 +36,44 @@ impl Mutation {
         Ok(())
     }
 
-    pub async fn delete_link(db: &DbConn, id: i32) -> anyhow::Result<()> {
-        let mut link: links::ActiveModel = links::Entity::find_by_id(id)
+    pub async fn delete_link(db: &DbConn, link: links::ActiveModel) -> anyhow::Result<()> {
+        let fid = link.fid.unwrap();
+        let target_fid = link.target_fid.unwrap();
+        let mut link_am: links::ActiveModel = links::Entity::find()
+            .filter(links::Column::Fid.eq(fid))
+            .filter(links::Column::TargetFid.eq(target_fid))
             .one(db)
             .await?
-            .ok_or(DbErr::RecordNotFound(format!("link#{}", id)))
+            .ok_or(DbErr::RecordNotFound(format!(
+                "link_with_fid_targetfid#{:?}, {:?}",
+                fid, target_fid
+            )))
             .map(Into::into)?;
 
-        link.deleted_at = Set(Some(Utc::now().into()));
-        link.update(db).await?;
+        link_am.deleted_at = Set(Some(link.timestamp.unwrap()));
+        link_am.updated_at = Set(Utc::now().into());
+        link_am.update(db).await?;
+
+        Ok(())
+    }
+
+    pub async fn prune_link(db: &DbConn, link: links::ActiveModel) -> anyhow::Result<()> {
+        let fid = link.fid.unwrap();
+        let target_fid = link.target_fid.unwrap();
+        let mut link_am: links::ActiveModel = links::Entity::find()
+            .filter(links::Column::Fid.eq(fid))
+            .filter(links::Column::TargetFid.eq(target_fid))
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound(format!(
+                "link_with_fid_targetfid#{:?}, {:?}",
+                fid, target_fid
+            )))
+            .map(Into::into)?;
+
+        link_am.pruned_at = Set(Some(link.timestamp.unwrap()));
+        link_am.updated_at = Set(Utc::now().into());
+        link_am.update(db).await?;
 
         Ok(())
     }
