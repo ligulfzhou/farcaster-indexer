@@ -323,12 +323,12 @@ pub fn signer_message_to_entity(event: OnChainEvent) -> Option<entity::signers::
                     active_model.key = Set(vec_u8_to_hex_string(&body.key));
                     active_model.key_type = Set(body.key_type as i32);
                     active_model.metadata_type = Set(body.metadata_type as i32);
-                    active_model.added_at = Set(timestamp.clone());
+                    active_model.added_at = Set(timestamp);
                     active_model.updated_at = Set(timestamp);
                 }
                 SignerEventType::Remove => {
                     active_model.key = Set(vec_u8_to_hex_string(&body.key));
-                    active_model.removed_at = Set(Some(timestamp.clone()));
+                    active_model.removed_at = Set(Some(timestamp));
                     active_model.updated_at = Set(timestamp);
                 }
                 SignerEventType::AdminReset => {}

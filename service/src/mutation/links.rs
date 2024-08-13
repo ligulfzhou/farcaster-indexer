@@ -1,9 +1,9 @@
 use crate::mutation::Mutation;
 use chrono::Utc;
-use entity::{casts, links, reactions};
+use entity::links;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 impl Mutation {
     pub async fn insert_link(db: &DbConn, link: links::ActiveModel) -> anyhow::Result<()> {

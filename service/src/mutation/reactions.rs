@@ -1,9 +1,9 @@
 use crate::mutation::Mutation;
 use chrono::Utc;
-use entity::{casts, reactions};
+use entity::reactions;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, Value};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 impl Mutation {
     pub async fn insert_reaction(
