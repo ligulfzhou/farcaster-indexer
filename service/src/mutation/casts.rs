@@ -1,10 +1,10 @@
 use crate::mutation::Mutation;
 use chrono::Utc;
 use entity::casts;
-use sea_orm::prelude::DateTimeWithTimeZone;
-use sea_orm::sea_query::OnConflict;
-use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    prelude::DateTimeWithTimeZone, sea_query::OnConflict, ActiveModelTrait, ActiveValue::Set,
+    ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter,
+};
 
 impl Mutation {
     pub async fn insert_cast(db: &DbConn, cast: casts::ActiveModel) -> anyhow::Result<()> {

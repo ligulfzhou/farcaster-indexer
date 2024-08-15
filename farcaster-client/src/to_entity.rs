@@ -1,16 +1,14 @@
-use crate::grpc::cast_add_body::Parent;
-use crate::grpc::embed::Embed as InnerEmbed;
-use crate::grpc::on_chain_event::Body as OnChainEventBody;
-use crate::grpc::reaction_body::Target;
-use crate::grpc::{link_body, Embed, OnChainEvent, SignerEventType};
-pub use crate::grpc::{message_data::Body, Message, MessageData};
+use crate::grpc::{
+    cast_add_body::Parent, embed::Embed as InnerEmbed, link_body, message_data::Body,
+    on_chain_event::Body as OnChainEventBody, reaction_body::Target, Embed, Message, MessageData,
+    OnChainEvent, SignerEventType,
+};
 use crate::utils::{farcaster_timestamp_to_datetime_with_tz, vec_u8_to_hex_string};
 use chrono::Utc;
 use entity::sea_orm::ActiveValue::Set;
 use ethereum_abi::{Param as EthParam, Type, Value as EthValue};
 use serde_json::json;
-use std::collections::HashMap;
-use std::string::String;
+use std::{collections::HashMap, string::String};
 
 fn format_embeds(embeds: Vec<Embed>) -> Vec<String> {
     embeds

@@ -1,7 +1,8 @@
 use crate::mutation::Mutation;
 use entity::fids;
-use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    sea_query::OnConflict, ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter,
+};
 
 impl Mutation {
     pub async fn insert_fid(db: &DbConn, fid: fids::ActiveModel) -> anyhow::Result<()> {

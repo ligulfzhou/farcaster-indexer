@@ -1,3 +1,4 @@
+use crate::constants::FARCASTER_QUEUE;
 use crate::rabbitmq::{get_consumer, get_mq_queue_channel};
 use bytes::Bytes;
 use chrono::Utc;
@@ -23,7 +24,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 pub async fn run(_db: &DbConn, mut hub_client: Client) -> anyhow::Result<()> {
-    let (_, queue, chan) = get_mq_queue_channel().await;
+    let (_, queue, chan) = get_mq_queue_channel(FARCASTER_QUEUE).await;
     tokio::spawn(async move {
         hub_client
             .subscribe_to_mq(0, queue, chan)
@@ -31,7 +32,7 @@ pub async fn run(_db: &DbConn, mut hub_client: Client) -> anyhow::Result<()> {
             .expect("subscribe to farcaster node with MQ");
     });
 
-    let (conn, consumer) = get_consumer().await;
+    let (conn, consumer) = get_consumer(FARCASTER_QUEUE).await;
     let delegate = Delegate;
     consumer.set_delegate(delegate);
     conn.run().expect("consume message forever");
@@ -191,8 +192,7 @@ impl Delegate {
                 dbg!("UNHANDLED HUB EVENT, ", event.id);
             }
         }
-
-        todo!()
+        Ok(())
     }
 }
 

@@ -1,17 +1,15 @@
-use farcaster_client::grpc::SignerEventType;
-use farcaster_client::to_entity::{
-    cast_message_to_entity, link_message_to_entity, reaction_message_to_entity,
-    registration_message_to_entity, signer_message_to_entity, storage_message_to_entity,
-    user_data_messages_to_entity, verification_message_to_entity,
-};
+use crate::constants::CHUNK_SIZE;
 use farcaster_client::{
     client::Client,
-    grpc::{on_chain_event::Body as OnChainEventBody, IdRegisterEventType},
+    grpc::{on_chain_event::Body as OnChainEventBody, IdRegisterEventType, SignerEventType},
+    to_entity::{
+        cast_message_to_entity, link_message_to_entity, reaction_message_to_entity,
+        registration_message_to_entity, signer_message_to_entity, storage_message_to_entity,
+        user_data_messages_to_entity, verification_message_to_entity,
+    },
 };
 use service::sea_orm::DbConn;
 use tracing::info;
-
-const CHUNK_SIZE: usize = 1000;
 
 pub async fn run(db: &DbConn, mut hub_client: Client, max_fid: i32) -> anyhow::Result<()> {
     let client_clone = hub_client.clone();

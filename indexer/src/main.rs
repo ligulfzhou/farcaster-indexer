@@ -1,3 +1,4 @@
+mod constants;
 mod db;
 mod rabbitmq;
 mod redis;

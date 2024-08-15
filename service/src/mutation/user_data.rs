@@ -1,7 +1,6 @@
 use crate::mutation::Mutation;
 use entity::user_data;
-use sea_orm::sea_query::OnConflict;
-use sea_orm::{DbConn, DbErr, EntityTrait};
+use sea_orm::{sea_query::OnConflict, DbConn, DbErr, EntityTrait};
 
 impl Mutation {
     pub async fn insert_user_data(

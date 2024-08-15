@@ -1,7 +1,6 @@
 use crate::mutation::Mutation;
 use entity::storage;
-use sea_orm::sea_query::OnConflict;
-use sea_orm::{DbConn, DbErr, EntityTrait};
+use sea_orm::{sea_query::OnConflict, DbConn, DbErr, EntityTrait};
 use std::vec;
 
 impl Mutation {
