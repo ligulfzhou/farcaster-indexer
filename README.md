@@ -1,4 +1,4 @@
-# Farcaster Indexer
+# Farcaster Indexer(WIP)
 
 This is a Rust version of [Farcaster-Indexer](https://github.com/gskril/farcaster-indexer)
 by [gskril](https://github.com/gskril) which listens for messages
